@@ -1,0 +1,171 @@
+
+.content{
+    margin-top: 3%;
+}
+h2 {
+    background-color: #ccc;
+    
+    font-size: 25px;
+    font-weight:bold;
+}
+.form-container, form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;  /* Centers all child elements */
+    justify-content: center;
+    width: 50%;  /* Adjust width as needed */
+    margin: 0 auto;  /* Centers the form horizontally */
+    padding: 20px;
+    background: white;
+    border-radius: 5px;
+}
+
+label {
+    width: 550px; /* Set a fixed width for alignment */
+    text-align: left; /* Aligns text to the right */
+    font-weight: bold;
+}
+input {
+    flex-grow: 1; /* Input takes remaining space */
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 150%;
+    align-items: center;
+}
+
+.input-button-container {
+    display: flex;
+    align-items: center;
+    width: 150%;
+    gap: 10px; /* Adds space between input and button */
+}
+
+.last-name-input {
+    flex-grow: 1; /* Makes input take up available space */
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 60%;
+    box-sizing: border-box;
+}
+
+.add-btn {
+    background-color: red;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap; /* Prevents the button from stretching */
+}
+
+
+.search-container {
+    display: flex;
+    align-items: center;
+    max-width: 600px;
+    margin: 5px auto;
+}
+
+.search-input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 14px;
+}
+
+.search-btn {
+    background-color: red;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Space between icon and text */
+    margin-left: 10px;
+    font-size: 13px;
+}
+
+.search-btn i {
+    font-size: 15px; /* Adjust icon size */
+}
+
+
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+
+.table-container {
+    max-height: 300px; /* Adjust to fit approx. 3 rows */
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    margin-top: 20px;
+}
+
+.table-container table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-container th, 
+.table-container td {
+    padding: 10px;
+    border: 1px solid #ccc;
+    text-align: center;
+}
+
+.table-container thead th {
+    position: sticky;
+    top: 0;
+    background-color: #ddd;
+    z-index: 1;
+}
+
+
+
+
+
+table thead th {
+    position: sticky;
+    top: 0;
+    background: #ddd;
+    z-index: 1;
+}
+
+
+th, td {
+    padding: 10px;
+    border: 1px solid #ccc;
+    text-align: center;
+}
+
+th {
+    background-color: #ddd;
+}
+
+.edit, .delete {
+    background: none;
+    border: none;
+    color: red;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.edit i {
+    color: red;
+    margin-right: 5px;
+}
+
+.delete i {
+    color: red;
+    margin-right: 5px;
+}
