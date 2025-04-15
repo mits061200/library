@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <title>Dashboard | ADMIN</title>
-    <link rel="stylesheet" href="header.css" />
+    <link rel="stylesheet" href="css/header.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
     <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
 </head>
@@ -24,7 +24,7 @@
 </div>
 
 <div class="content">
-    <!-- Your page content goes here -->
+
 </div>
 
 </body>

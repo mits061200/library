@@ -64,8 +64,8 @@ input {
 .search-container {
     display: flex;
     align-items: center;
-    max-width: 600px;
-    margin: 5px auto;
+    width: 600px;
+    margin-top: -40px;
 }
 
 .search-input {
@@ -105,11 +105,11 @@ table {
 
 
 .table-container {
-    max-height: 300px; /* Adjust to fit approx. 3 rows */
-    overflow-y: auto;
     border: 1px solid #ccc;
-    margin-top: 20px;
+    margin-top: 5px;
+    overflow: visible; /* optional - ensures full visibility */
 }
+
 
 .table-container table {
     width: 100%;
@@ -168,4 +168,69 @@ th {
 .delete i {
     color: red;
     margin-right: 5px;
+}
+
+/* Add this to your author.css file */
+
+/* Pagination Container */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+/* Pagination Links */
+.pagination-link {
+    display: inline-block;
+    padding: 8px 12px;
+    margin: 0 2px;
+    background-color: #f8f9fa;
+    color: black;
+    text-decoration: none;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+/* Active/Hover States */
+.pagination-link:hover {
+    background-color: #e9ecef;
+    color: red;
+}
+
+.pagination-link.active {
+    background-color: red;
+    color: white;
+    border-color: red;
+}
+
+/* Disabled State (for First/Previous when on first page) */
+.pagination-link.disabled {
+    color: #6c757d;
+    pointer-events: none;
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+/* Page Info */
+.page-info {
+    margin-left: 15px;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 600px) {
+    .pagination {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .page-info {
+        margin: 10px 0 0 0;
+    }
 }
