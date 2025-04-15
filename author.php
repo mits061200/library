@@ -164,6 +164,6 @@ function confirmDelete(authorId) {
     return confirmAction; // Returns true to proceed, false to cancel
 }
 </script>
-jhshgsahgsahsjahj
+jshajsjasjaska
 
 <link rel="stylesheet" href="author.css">
