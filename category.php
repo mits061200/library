@@ -3,6 +3,10 @@ include 'header.php';
 include 'navbar.php'; 
 include 'db.php'; 
 
+// Initialize variables
+$edit_mode = false;
+$edit_category = [];
+
 // Add Category
 if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['add_category'])) {
     $category_name = trim($_POST['category_name']);
@@ -28,30 +32,50 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['add_category'])) {
     }
 }
 
-// Delete Category
+// Delete category - Fixed Error Handling
 if (isset($_GET['delete'])) {
     $id = $_GET['delete'];
-    $stmt = $conn->prepare("DELETE FROM category WHERE categoryID = ?");
+    
+    // First check if author exists
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM category WHERE CategoryID = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
+    $stmt->bind_result($count);
+    $stmt->fetch();
     $stmt->close();
-    header("Location: category.php");
+    
+    if ($count > 0) {
+        // Category exists, proceed with deletion
+        $stmt = $conn->prepare("DELETE FROM category WHERE CategoryID = ?");
+        $stmt->bind_param("i", $id);
+        
+        if ($stmt->execute()) {
+            echo "<script>alert('Category deleted successfully'); window.location='category.php';</script>";
+        } else {
+            echo "<script>alert('Error: Unable to category author. It may be in use.'); window.location='category.php';</script>";
+        }
+        $stmt->close();
+    } else {
+        echo "<script>alert('Error: Category not found'); window.location='category.php';</script>";
+    }
     exit;
 }
 
-// Edit Mode
-$edit_mode = false;
-$edit_category = [];
-
+// Edit Category
 if (isset($_GET['edit'])) {
     $edit_mode = true;
     $id = $_GET['edit'];
-    $stmt = $conn->prepare("SELECT * FROM category WHERE categoryID = ?");
+    $stmt = $conn->prepare("SELECT * FROM category WHERE CategoryID = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $result_edit = $stmt->get_result();
     $edit_category = $result_edit->fetch_assoc();
     $stmt->close();
+    
+    if (!$edit_category) {
+        echo "<script>alert('Category not found'); window.location='category.php';</script>";
+        exit;
+    }
 }
 
 // Update Category
@@ -59,14 +83,26 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['update_category'])) {
     $id = $_POST['category_id'];
     $category_name = trim($_POST['category_name']);
 
-    $stmt = $conn->prepare("UPDATE category SET categoryName = ? WHERE categoryID = ?");
+    // Check if new name already exists for other categories
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM category WHERE categoryName = ? AND CategoryID != ?");
     $stmt->bind_param("si", $category_name, $id);
-    if ($stmt->execute()) {
-        echo "<script>alert('Category updated successfully'); window.location='category.php';</script>";
-    } else {
-        echo "<script>alert('Error updating category');</script>";
-    }
+    $stmt->execute();
+    $stmt->bind_result($count);
+    $stmt->fetch();
     $stmt->close();
+
+    if ($count > 0) {
+        echo "<script>alert('Error: Another category with this name already exists!');</script>";
+    } else {
+        $stmt = $conn->prepare("UPDATE category SET CategoryName = ? WHERE CategoryID = ?");
+        $stmt->bind_param("si", $category_name, $id);
+        if ($stmt->execute()) {
+            echo "<script>alert('Category updated successfully'); window.location='category.php';</script>";
+        } else {
+            echo "<script>alert('Error updating category: " . $conn->error . "');</script>";
+        }
+        $stmt->close();
+    }
 }
 
 // Pagination
@@ -123,17 +159,16 @@ $result = $stmt->get_result();
 
         <div class="form-container">
             <form action="category.php" method="POST">
-                <!-- Hidden input for category ID when editing -->
-                <?php if ($edit_mode && isset($edit_category['categoryID'])): ?>
-                    <input type="hidden" name="category_id" value="<?= htmlspecialchars($edit_category['categoryID']) ?>">
+                <?php if ($edit_mode): ?>
+                    <input type="hidden" name="category_id" value="<?= htmlspecialchars($edit_category['CategoryID']) ?>">
                 <?php endif; ?>
-
+                
                 <label>Category Name:</label>
                 <div class="input-button-container">
-                    <input type="text" name="category_name" class="last-name-input" placeholder="Enter Category Name"
-                        value="<?= $edit_mode && isset($edit_category['categoryName']) ? htmlspecialchars($edit_category['categoryName']) : '' ?>" required>
-
-                    <!-- Show the corresponding button based on the mode -->
+                    <input type="text" name="category_name" class="last-name-input" 
+                           placeholder="Enter Category Name" 
+                           value="<?= $edit_mode ? htmlspecialchars($edit_category['CategoryName']) : '' ?>" required>
+                    
                     <?php if ($edit_mode): ?>
                         <button type="submit" name="update_category" class="add-btn">Update</button>
                     <?php else: ?>
@@ -142,7 +177,6 @@ $result = $stmt->get_result();
                 </div>
             </form>
         </div>
-
 
         <form action="category.php" method="POST">
             <div class="search-container">
@@ -166,8 +200,7 @@ $result = $stmt->get_result();
                         $serial = ($page - 1) * $records_per_page + 1;
                         while ($row = $result->fetch_assoc()) {
                             echo "<tr>";
-                            echo "<td>" . $serial++ . "</td>";
-
+                            echo "<td>" . $row['CategoryID'] . "</td>"; // Changed from $serial++ to show actual CategoryID
                             echo "<td>" . htmlspecialchars($row['CategoryName']) . "</td>";
                             echo "<td>
                                     <a href='category.php?edit=" . $row['CategoryID'] . "' class='edit'><i class='fas fa-edit'></i> Edit</a>
@@ -184,30 +217,29 @@ $result = $stmt->get_result();
         </div>
 
         <?php if ($total_records > $records_per_page): ?>
-    <div class="pagination">
-        <?php if ($page > 1): ?>
-            <a href="category.php?page=1<?= !empty($search) ? '&search=' . urlencode($search) : '' ?>" class="pagination-link">First</a>
-            <a href="category.php?page=<?= $page - 1 ?><?= !empty($search) ? '&search=' . urlencode($search) : '' ?>" class="pagination-link">Previous</a>
+            <div class="pagination">
+                <?php if ($page > 1): ?>
+                    <a href="category.php?page=1<?= !empty($search) ? '&search=' . urlencode($search) : '' ?>" class="pagination-link">First</a>
+                    <a href="category.php?page=<?= $page - 1 ?><?= !empty($search) ? '&search=' . urlencode($search) : '' ?>" class="pagination-link">Previous</a>
+                <?php endif; ?>
+
+                <?php
+                $start_page = max(1, $page - 2);
+                $end_page = min($total_pages, $page + 2);
+                for ($i = $start_page; $i <= $end_page; $i++):
+                    $active = ($i == $page) ? ' active' : '';
+                ?>
+                    <a href="category.php?page=<?= $i ?><?= !empty($search) ? '&search=' . urlencode($search) : '' ?>" class="pagination-link<?= $active ?>"><?= $i ?></a>
+                <?php endfor; ?>
+
+                <?php if ($page < $total_pages): ?>
+                    <a href="category.php?page=<?= $page + 1 ?><?= !empty($search) ? '&search=' . urlencode($search) : '' ?>" class="pagination-link">Next</a>
+                    <a href="category.php?page=<?= $total_pages ?><?= !empty($search) ? '&search=' . urlencode($search) : '' ?>" class="pagination-link">Last</a>
+                <?php endif; ?>
+
+                <div class="page-info">Page <?= $page ?> of <?= $total_pages ?></div>
+            </div>
         <?php endif; ?>
-
-        <?php
-        $start_page = max(1, $page - 2);
-        $end_page = min($total_pages, $page + 2);
-        for ($i = $start_page; $i <= $end_page; $i++):
-            $active = ($i == $page) ? ' active' : '';
-        ?>
-            <a href="category.php?page=<?= $i ?><?= !empty($search) ? '&search=' . urlencode($search) : '' ?>" class="pagination-link<?= $active ?>"><?= $i ?></a>
-        <?php endfor; ?>
-
-        <?php if ($page < $total_pages): ?>
-            <a href="category.php?page=<?= $page + 1 ?><?= !empty($search) ? '&search=' . urlencode($search) : '' ?>" class="pagination-link">Next</a>
-            <a href="category.php?page=<?= $total_pages ?><?= !empty($search) ? '&search=' . urlencode($search) : '' ?>" class="pagination-link">Last</a>
-        <?php endif; ?>
-
-        <div class="page-info">Page <?= $page ?> of <?= $total_pages ?></div>
-    </div>
-<?php endif; ?>
-
 
     </div>
 </main>

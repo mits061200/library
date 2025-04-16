@@ -34,21 +34,41 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['add_author'])) {
     }
 }
 
-// Delete Author
-if (isset($_GET['delete'])) {
-    $id = $_GET['delete'];
-    $stmt = $conn->prepare("DELETE FROM authors WHERE author_id = ?");
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $stmt->close();
-    // Redirect to avoid resubmission
-    header("Location: author.php");
-    exit;
-}
 
 // Initialize edit mode variables
 $edit_mode = false;
 $edit_author = [];
+
+
+// Delete author - Fixed Error Handling
+if (isset($_GET['delete'])) {
+    $id = $_GET['delete'];
+    
+    // First check if author exists
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM authors WHERE author_id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->bind_result($count);
+    $stmt->fetch();
+    $stmt->close();
+    
+    if ($count > 0) {
+        // author exists, proceed with deletion
+        $stmt = $conn->prepare("DELETE FROM authors WHERE author_id = ?");
+        $stmt->bind_param("i", $id);
+        
+        if ($stmt->execute()) {
+            echo "<script>alert('Author deleted successfully'); window.location='author.php';</script>";
+        } else {
+            echo "<script>alert('Error: Unable to delete author. It may be in use.'); window.location='author.php';</script>";
+        }
+        $stmt->close();
+    } else {
+        echo "<script>alert('Error: Author not found'); window.location='author.php';</script>";
+    }
+    exit;
+}
+
 
 // Edit Author
 if (isset($_GET['edit'])) {
@@ -135,22 +155,22 @@ if (!empty($search_condition)) {
         <h2><?= $edit_mode ? 'Edit Author' : 'Add Author' ?></h2>
 
         <div class="form-container">
-            <form action="category.php" method="POST">
-                <!-- Hidden input for category ID when editing -->
-                <?php if ($edit_mode && isset($edit_category['categoryID'])): ?>
-                    <input type="hidden" name="category_id" value="<?= htmlspecialchars($edit_category['categoryID']) ?>">
-                <?php endif; ?>
+            <form action="author.php<?= $edit_mode ? '' : '?add=1' ?>" method="POST">
+                <input type="hidden" name="author_id" value="<?= $edit_mode ? htmlspecialchars($edit_author['author_id']) : '' ?>">
 
-                <label>Category Name:</label>
+                <label>First Name:</label>
+                <input type="text" name="first_name" placeholder="Enter First Name" value="<?= $edit_mode ? htmlspecialchars($edit_author['first_name']) : '' ?>" required>
+
+                <label>Middle Name:</label>
+                <input type="text" name="middle_name" placeholder="Enter Middle Name" value="<?= $edit_mode ? htmlspecialchars($edit_author['middle_name']) : '' ?>">
+
+                <label>Last Name:</label>
                 <div class="input-button-container">
-                    <input type="text" name="category_name" class="last-name-input" placeholder="Enter Category Name"
-                        value="<?= $edit_mode && isset($edit_category['categoryName']) ? htmlspecialchars($edit_category['categoryName']) : '' ?>" required>
-
-                    <!-- Show the corresponding button based on the mode -->
+                    <input type="text" name="last_name" class="last-name-input" placeholder="Enter Last Name" value="<?= $edit_mode ? htmlspecialchars($edit_author['last_name']) : '' ?>" required>
                     <?php if ($edit_mode): ?>
-                        <button type="submit" name="update_category" class="add-btn">Update</button>
+                        <button type="submit" name="update_author" class="add-btn">Update</button>
                     <?php else: ?>
-                        <button type="submit" name="add_category" class="add-btn">Add</button>
+                        <button type="submit" name="add_author" class="add-btn">Add</button>
                     <?php endif; ?>
                 </div>
             </form>
@@ -199,7 +219,7 @@ if (!empty($search_condition)) {
                     ?>
                 </tbody>
             </table>
-    </div>    
+            
             <?php if ($total_records > $records_per_page): ?>
             <div class="pagination">
                 <?php if ($page > 1): ?>
@@ -226,7 +246,7 @@ if (!empty($search_condition)) {
                 <div class="page-info">Page <?= $page ?> of <?= $total_pages ?></div>
             </div>
             <?php endif; ?>
-        
+        </div>
     </div>
 </main>
 
