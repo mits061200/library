@@ -170,7 +170,10 @@ $result = $stmt->get_result();
                            value="<?= $edit_mode ? htmlspecialchars($edit_category['CategoryName']) : '' ?>" required>
                     
                     <?php if ($edit_mode): ?>
-                        <button type="submit" name="update_category" class="add-btn">Update</button>
+                        <div class="button-group">
+                            <button type="submit" name="update_category" class="add-btn">Update</button>
+                            <a href="category.php" class="cancel-btn">Cancel</a>
+                        </div>
                     <?php else: ?>
                         <button type="submit" name="add_category" class="add-btn">Add</button>
                     <?php endif; ?>
@@ -243,5 +246,6 @@ $result = $stmt->get_result();
 
     </div>
 </main>
+
 
 <link rel="stylesheet" href="css\author.css">

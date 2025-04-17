@@ -1,0 +1,259 @@
+/* Page content spacing */
+.content {
+    margin-top: 3%;
+}
+
+/* Title: Classification Management */
+.classification-container h2 {
+    background-color: #ccc;
+    font-size: 25px;
+    font-weight: bold;
+    text-align: left;
+    margin-left: 20px;
+}
+
+/* Forms Side-by-Side Container */
+.forms-wrapper {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 0 20px;
+    margin: 20px 0;
+}
+
+/* Form Card Styling */
+.form-section {
+    flex: 1;
+    padding: 20px;
+    background: white;
+    text-align: center;
+}
+
+/* Form Titles Centered */
+.form-section h3 {
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+/* Form Group */
+.form-group {
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+/* Label Styling */
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    text-align: left;
+    font-size: 14px;
+}
+
+/* Inputs and Dropdowns */
+.form-section input,
+.form-section select {
+    width: 90%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    margin-left: 50px;
+}
+
+
+/* Add Button Centered */
+.form-section .add-btn {
+    background-color: red;
+    color: white;
+    padding: 8px 30px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 10px;
+    /* Center the button */
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Search Bar */
+.search-form {
+    text-align: center;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.search-form label {
+    font-weight: 500;
+}
+
+.search-form input {
+    padding: 10px;
+    width: 400px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.search-btn {
+    background-color: red;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.search-btn i {
+    font-size: 15px;
+}
+
+/* Table Container */
+.table-container {
+    border: 1px solid #ccc;
+    margin-top: 20px;
+}
+
+.table-container table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-container th,
+.table-container td {
+    padding: 10px;
+    border: 1px solid #ccc;
+    text-align: center;
+}
+
+.table-container thead th {
+    background-color: #ddd;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.main-row {
+    background-color: #eee;
+    font-weight: bold;
+}
+
+/* Action Buttons */
+.edit,
+.delete {
+    color: red;
+    text-decoration: none;
+    margin: 0 5px;
+    font-size: 14px;
+}
+
+.edit i,
+.delete i {
+    margin-right: 5px;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.pagination-link {
+    display: inline-block;
+    padding: 8px 12px;
+    margin: 0 2px;
+    background-color: #f8f9fa;
+    color: black;
+    text-decoration: none;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.pagination-link:hover {
+    background-color: #e9ecef;
+    color: red;
+}
+
+.pagination-link.active {
+    background-color: red;
+    color: white;
+    border-color: red;
+}
+
+.pagination-link.disabled {
+    color: #6c757d;
+    pointer-events: none;
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.page-info {
+    margin-left: 15px;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+
+.cancel-btn {
+    display: inline-block;
+    padding: 8px 15px;
+    background-color: red;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    margin-left: 3px;
+    margin-top: 10PX;
+    font-size: 14px;
+    font-weight: bold;
+}
+.cancel-btn:hover {
+    background-color: #5a6268;
+}
+
+
+/* Responsive for Small Screens */
+@media (max-width: 768px) {
+    .forms-wrapper {
+        flex-direction: column;
+        padding: 0 10px;
+    }
+
+    .form-section {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
+    .search-form {
+        flex-direction: column;
+    }
+
+    .search-form input {
+        width: 90%;
+    }
+
+    .pagination {
+        flex-direction: column;
+    }
+
+    .page-info {
+        margin-top: 10px;
+    }
+}
+

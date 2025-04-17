@@ -171,6 +171,7 @@ $result = $stmt->get_result();
                     
                     <?php if ($edit_mode): ?>
                         <button type="submit" name="update_material" class="add-btn">Update</button>
+                        <a href="category.php" class="cancel-btn">Cancel</a>
                     <?php else: ?>
                         <button type="submit" name="add_material" class="add-btn">Add</button>
                     <?php endif; ?>

@@ -25,14 +25,18 @@ label {
     text-align: left; /* Aligns text to the right */
     font-weight: bold;
 }
+
+
 input {
     flex-grow: 1; /* Input takes remaining space */
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 5px;
-    width: 150%;
+    width: 1000000000000000px;
     align-items: center;
+    margin-left:-300px;
 }
+    
 
 .input-button-container {
     display: flex;

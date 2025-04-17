@@ -155,7 +155,7 @@ $result = $stmt->get_result();
 
 <main class="content">
     <div class="author-container">
-        <h2><?= $edit_mode ? 'Edit Category' : 'Add Category' ?></h2>
+        <h2><?= $edit_mode ? 'Edit Location' : 'Add Location' ?></h2>
 
         <div class="form-container">
             <form action="location.php" method="POST">
@@ -171,6 +171,7 @@ $result = $stmt->get_result();
                     
                     <?php if ($edit_mode): ?>
                         <button type="submit" name="update_location" class="add-btn">Update</button>
+                        <a href="category.php" class="cancel-btn">Cancel</a>
                     <?php else: ?>
                         <button type="submit" name="add_location" class="add-btn">Add</button>
                     <?php endif; ?>
