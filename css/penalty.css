@@ -25,14 +25,13 @@ label {
     text-align: left; /* Aligns text to the right */
     font-weight: bold;
 }
+
+
 input {
-    flex-grow: 1; /* Input takes remaining space */
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    width: 150%;
-    align-items: center;
+   
+    margin-left:-200px;
 }
+    
 
 .input-button-container {
     display: flex;
@@ -46,7 +45,7 @@ input {
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 5px;
-    width: 60%;
+    width: 250px;
     box-sizing: border-box;
 }
 
@@ -58,17 +57,19 @@ input {
     border-radius: 5px;
     cursor: pointer;
     white-space: nowrap; /* Prevents the button from stretching */
+    margin-top: 10px;
+    margin-left: 20px;
 }
-
 .add-btn:hover {
     background-color: #5a6268;
 }
 
 
+
 .search-container {
     display: flex;
     align-items: center;
-    width: 600px;
+    width: 300px;
     margin-top: -40px;
 }
 
@@ -190,6 +191,7 @@ th {
     cursor: pointer;
     font-size: 14px;
     transition: background-color 0.3s;
+    margin-top: 10px;
 }
 
 .cancel-btn:hover {

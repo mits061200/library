@@ -28,13 +28,8 @@ label {
 
 
 input {
-    flex-grow: 1; /* Input takes remaining space */
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    width: 1000000000000000px;
-    align-items: center;
-    margin-left:-300px;
+   
+    margin-left:-200px;
 }
     
 
@@ -50,7 +45,7 @@ input {
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 5px;
-    width: 60%;
+    width: 250px;
     box-sizing: border-box;
 }
 
@@ -62,13 +57,19 @@ input {
     border-radius: 5px;
     cursor: pointer;
     white-space: nowrap; /* Prevents the button from stretching */
+    margin-top: 10px;
+    margin-left: 20px;
 }
+.add-btn:hover {
+    background-color: #5a6268;
+}
+
 
 
 .search-container {
     display: flex;
     align-items: center;
-    width: 600px;
+    width: 300px;
     margin-top: -40px;
 }
 
@@ -135,7 +136,50 @@ table {
 }
 
 
+/* Additional styles for personnel.php */
+h3 {
+    background-color: #f5f5f5;
+    padding: 8px;
+    width: 100%;
+    text-align: center;
+    margin: 15px 0;
+    font-size: 18px;
+    color: #333;
+}
 
+
+/* Two-column layout styles */
+.form-columns-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-column {
+    flex: 1;
+    min-width: 300px;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.personnel-info {
+    border-left: 4px solid #3498db;
+}
+
+.login-info {
+    border-left: 4px solid #2ecc71;
+}
+
+.form-column h3 {
+    margin-top: 0;
+    color: #333;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
 
 
 table thead th {
@@ -190,6 +234,7 @@ th {
     cursor: pointer;
     font-size: 14px;
     transition: background-color 0.3s;
+    margin-top: 10px;
 }
 
 .cancel-btn:hover {
@@ -250,14 +295,13 @@ th {
     font-size: 14px;
 }
 
-/* Responsive Adjustments */
-@media (max-width: 600px) {
-    .pagination {
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .form-columns-container {
         flex-direction: column;
-        align-items: center;
     }
     
-    .page-info {
-        margin: 10px 0 0 0;
+    .form-column {
+        width: 100%;
     }
 }

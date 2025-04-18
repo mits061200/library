@@ -80,6 +80,10 @@
     margin-right: auto;
 }
 
+.add-btn:hover {
+    background-color: #5a6268;
+}
+
 /* Search Bar */
 .search-form {
     text-align: center;

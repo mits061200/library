@@ -14,11 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['add_penalty'])) {
 
     $stmt = $conn->prepare("INSERT INTO penalty (PenaltyName, PenaltyAmount, Duration) VALUES (?, ?, ?)");
     $stmt->bind_param("sds", $name, $amount, $duration);
-    if ($stmt->execute()) {
-        echo "<script>alert('Penalty added successfully');</script>";
-    } else {
-        echo "<script>alert('Error adding penalty');</script>";
-    }
+    $stmt->execute();
+    echo "<script>alert('Penalty added successfully');</script>";
     $stmt->close();
 }
 
@@ -47,7 +44,7 @@ if (isset($_GET['edit'])) {
     $result_edit = $stmt->get_result();
     $edit_penalty = $result_edit->fetch_assoc();
     $stmt->close();
-    
+
     if (!$edit_penalty) {
         echo "<script>alert('Penalty not found'); window.location='penalty.php';</script>";
         exit;
@@ -71,19 +68,50 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['update_penalty'])) {
     $stmt->close();
 }
 
-// Pagination
-$records_per_page = 5;
+// Pagination + Search
+$records_per_page = 3;
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $offset = ($page - 1) * $records_per_page;
+$search = "";
 
-$total_query = "SELECT COUNT(*) as total FROM penalty";
-$result_total = $conn->query($total_query);
-$total_records = $result_total->fetch_assoc()['total'];
+// Handle Search
+$search_condition = "";
+$params = [];
+if ($_SERVER['REQUEST_METHOD'] === "POST" && isset($_POST['search_query'])) {
+    $search = trim($_POST['search_query']);
+    if (!empty($search)) {
+        $search_param = "%$search%";
+        $search_condition = "WHERE PenaltyName LIKE ? OR Duration LIKE ?";
+        $params = [$search_param, $search_param];
+    }
+}
+
+// Count total records
+if (!empty($search_condition)) {
+    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM penalty $search_condition");
+    $stmt->bind_param("ss", ...$params);
+    $stmt->execute();
+    $result_total = $stmt->get_result();
+    $total_records = $result_total->fetch_assoc()['total'];
+    $stmt->close();
+} else {
+    $result_total = $conn->query("SELECT COUNT(*) as total FROM penalty");
+    $total_records = $result_total->fetch_assoc()['total'];
+}
+
 $total_pages = ceil($total_records / $records_per_page);
 
-// Fetch records
-$stmt = $conn->prepare("SELECT * FROM penalty LIMIT ?, ?");
-$stmt->bind_param("ii", $offset, $records_per_page);
+// Fetch Penalties
+if (!empty($search_condition)) {
+    $stmt = $conn->prepare("SELECT * FROM penalty $search_condition LIMIT ?, ?");
+    $params[] = $offset;
+    $params[] = $records_per_page;
+    $stmt->bind_param("ssii", ...$params);
+
+} else {
+    $stmt = $conn->prepare("SELECT * FROM penalty LIMIT ?, ?");
+    $stmt->bind_param("ii", $offset, $records_per_page);
+}
 $stmt->execute();
 $result = $stmt->get_result();
 ?>
@@ -124,6 +152,15 @@ $result = $stmt->get_result();
             </form>
         </div>
 
+        <!-- Search Form -->
+        <form method="POST" action="penalty.php">
+            <div class="search-container">
+                <input type="text" class="search-input" name="search_query" placeholder="Search Penalty..." value="<?= htmlspecialchars($search) ?>">
+                <button type="submit" class="search-btn"><i class="fas fa-search"></i> Search</button>  
+            </div>
+        </form>
+
+        <!-- Penalty Table -->
         <div class="table-container">
             <table>
                 <thead>
@@ -158,11 +195,12 @@ $result = $stmt->get_result();
             </table>
         </div>
 
+        <!-- Pagination -->
         <?php if ($total_records > $records_per_page): ?>
             <div class="pagination">
                 <?php if ($page > 1): ?>
-                    <a href="penalty.php?page=1" class="pagination-link">First</a>
-                    <a href="penalty.php?page=<?= $page - 1 ?>" class="pagination-link">Previous</a>
+                    <a href="penalty.php?page=1<?= !empty($search) ? '&search=' . urlencode($search) : '' ?>" class="pagination-link">First</a>
+                    <a href="penalty.php?page=<?= $page - 1 ?><?= !empty($search) ? '&search=' . urlencode($search) : '' ?>" class="pagination-link">Previous</a>
                 <?php endif; ?>
 
                 <?php
@@ -171,12 +209,12 @@ $result = $stmt->get_result();
                 for ($i = $start_page; $i <= $end_page; $i++):
                     $active = ($i == $page) ? ' active' : '';
                 ?>
-                    <a href="penalty.php?page=<?= $i ?>" class="pagination-link<?= $active ?>"><?= $i ?></a>
+                    <a href="penalty.php?page=<?= $i ?><?= !empty($search) ? '&search=' . urlencode($search) : '' ?>" class="pagination-link<?= $active ?>"><?= $i ?></a>
                 <?php endfor; ?>
 
                 <?php if ($page < $total_pages): ?>
-                    <a href="penalty.php?page=<?= $page + 1 ?>" class="pagination-link">Next</a>
-                    <a href="penalty.php?page=<?= $total_pages ?>" class="pagination-link">Last</a>
+                    <a href="penalty.php?page=<?= $page + 1 ?><?= !empty($search) ? '&search=' . urlencode($search) : '' ?>" class="pagination-link">Next</a>
+                    <a href="penalty.php?page=<?= $total_pages ?><?= !empty($search) ? '&search=' . urlencode($search) : '' ?>" class="pagination-link">Last</a>
                 <?php endif; ?>
 
                 <div class="page-info">Page <?= $page ?> of <?= $total_pages ?></div>
@@ -185,4 +223,4 @@ $result = $stmt->get_result();
     </div>
 </main>
 
-<link rel="stylesheet" href="penalty.css">
+<link rel="stylesheet" href="css/penalty.css">
