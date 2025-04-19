@@ -25,7 +25,37 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['add_personnel'])) {
     // For credentials form
     $username = trim($_POST['username']);
     $password = trim($_POST['password']);
-    // Note: password_hash produces strings longer than VARCHAR(20), consider altering your table structure
+    $confirm_password = trim($_POST['confirm_password']);
+
+    // Check if passwords match
+    if ($password !== $confirm_password) {
+        echo "<script>alert('Password and Confirm Password do not match.');</script>";
+        exit;
+    }
+
+    // Validate password security
+    if (strlen($password) < 8) {
+        echo "<script>alert('Password must be at least 8 characters long.');</script>";
+        exit;
+    }
+    if (!preg_match('/[A-Z]/', $password)) {
+        echo "<script>alert('Password must include at least one uppercase letter.');</script>";
+        exit;
+    }
+    if (!preg_match('/[a-z]/', $password)) {
+        echo "<script>alert('Password must include at least one lowercase letter.');</script>";
+        exit;
+    }
+    if (!preg_match('/[0-9]/', $password)) {
+        echo "<script>alert('Password must include at least one number.');</script>";
+        exit;
+    }
+    if (!preg_match('/[\W_]/', $password)) {
+        echo "<script>alert('Password must include at least one special character (e.g., !, @, #, $, etc.).');</script>";
+        exit;
+    }
+
+    // Hash the password after validation
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
     $status = 'active'; // Default status for new personnel
 
@@ -36,12 +66,12 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['add_personnel'])) {
         // Insert personnel information
         $stmt = $conn->prepare("INSERT INTO personnel (PersonnelID, FirstName, MiddleName, LastName, Position, Address, PhoneNumber) 
                               VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssssi", $personnel_id, $first_name, $middle_name, $last_name, $position, $address, $phone_number);
+        $stmt->bind_param("sssssss", $personnel_id, $first_name, $middle_name, $last_name, $position, $address, $phone_number);
         $stmt->execute();
         $stmt->close();
         
         // Insert login credentials
-        $stmt = $conn->prepare("INSERT INTO personnel_login (PersonnelID, Username, Password, Status) VALUES (?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO personnelLogin (PersonnelID, Username, Password, Status) VALUES (?, ?, ?, ?)");
         $stmt->bind_param("ssss", $personnel_id, $username, $hashed_password, $status);
         $stmt->execute();
         $stmt->close();
@@ -55,6 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['add_personnel'])) {
         echo "<script>alert('Error adding personnel: " . $e->getMessage() . "');</script>";
     }
 }
+
+
 
 // Delete Personnel
 if (isset($_GET['delete'])) {
@@ -88,7 +120,7 @@ if (isset($_GET['edit'])) {
     
     // Get personnel information
     $stmt = $conn->prepare("SELECT p.*, pl.Username, pl.Status FROM personnel p 
-                          LEFT JOIN personnel_login pl ON p.PersonnelID = pl.PersonnelID 
+                          LEFT JOIN personnelLogin pl ON p.PersonnelID = pl.PersonnelID 
                           WHERE p.PersonnelID = ?");
     $stmt->bind_param("s", $id);
     $stmt->execute();
@@ -114,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['update_personnel'])) {
     
     // For credentials form
     $username = trim($_POST['username']);
-    $password = trim($_POST['password']);
+    $new_password = trim($_POST['password']); // New password field
     $status = isset($_POST['status']) ? trim($_POST['status']) : 'active';
     
     // Start transaction
@@ -124,18 +156,18 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['update_personnel'])) {
         // Update personnel information
         $stmt = $conn->prepare("UPDATE personnel SET FirstName = ?, MiddleName = ?, LastName = ?, 
                               Position = ?, Address = ?, PhoneNumber = ? WHERE PersonnelID = ?");
-        $stmt->bind_param("sssssis", $first_name, $middle_name, $last_name, $position, $address, $phone_number, $personnel_id);
+        $stmt->bind_param("sssssss", $first_name, $middle_name, $last_name, $position, $address, $phone_number, $personnel_id);
         $stmt->execute();
         $stmt->close();
         
-        // Check if password is provided for update
-        if (!empty($password)) {
-            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $conn->prepare("UPDATE personnel_login SET Username = ?, Password = ?, Status = ? WHERE PersonnelID = ?");
+        if (!empty($new_password)) {
+            // If new password is provided, update both username and password
+            $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+            $stmt = $conn->prepare("UPDATE personnelLogin SET Username = ?, Password = ?, Status = ? WHERE PersonnelID = ?");
             $stmt->bind_param("ssss", $username, $hashed_password, $status, $personnel_id);
         } else {
-            // Only update username and status
-            $stmt = $conn->prepare("UPDATE personnel_login SET Username = ?, Status = ? WHERE PersonnelID = ?");
+            // If no new password, just update username and status
+            $stmt = $conn->prepare("UPDATE personnelLogin SET Username = ?, Status = ? WHERE PersonnelID = ?");
             $stmt->bind_param("sss", $username, $status, $personnel_id);
         }
         
@@ -173,7 +205,7 @@ if (!empty($search_term)) {
     
     // Fetch records with search
     $stmt = $conn->prepare("SELECT p.*, pl.Username, pl.Status, pl.LastLogin FROM personnel p 
-                          LEFT JOIN personnel_login pl ON p.PersonnelID = pl.PersonnelID 
+                          LEFT JOIN personnelLogin pl ON p.PersonnelID = pl.PersonnelID 
                           $search_query ORDER BY p.PersonnelID LIMIT ?, ?");
     $stmt->bind_param("ssssssii", $search_param, $search_param, $search_param, $search_param, $search_param, $search_param, $offset, $records_per_page);
 } else {
@@ -183,7 +215,7 @@ if (!empty($search_term)) {
     
     // Fetch records without search
     $stmt = $conn->prepare("SELECT p.*, pl.Username, pl.Status, pl.LastLogin FROM personnel p 
-                          LEFT JOIN personnel_login pl ON p.PersonnelID = pl.PersonnelID 
+                          LEFT JOIN personnelLogin pl ON p.PersonnelID = pl.PersonnelID 
                           ORDER BY p.PersonnelID LIMIT ?, ?");
     $stmt->bind_param("ii", $offset, $records_per_page);
 }
@@ -238,32 +270,41 @@ $result = $stmt->get_result();
                            value="<?= $edit_mode ? htmlspecialchars($edit_personnel['Address']) : '' ?>" required>
 
                     <label>Phone Number:</label>
-                    <input type="number" name="phone_number" class="last-name-input" 
+                    <input type="text" name="phone_number" class="last-name-input" 
                            placeholder="Enter Phone Number" 
                            value="<?= $edit_mode ? htmlspecialchars($edit_personnel['PhoneNumber']) : '' ?>" required>
                 </form>
             </div>
-            
+
             <!-- Right column - Login Info -->
             <div class="form-column login-info">
                 <h3>Login Credentials</h3>
                 
                 <label>Username:</label>
                 <input type="text" name="username" form="personnel-form" class="last-name-input" 
-                       placeholder="Enter Username" 
-                       value="<?= $edit_mode ? htmlspecialchars($edit_personnel['Username']) : '' ?>" required>
-
-                <label>Password:</label>
-                <input type="password" name="password" form="personnel-form" class="last-name-input" 
-                       placeholder="<?= $edit_mode ? 'Leave blank to keep current password' : 'Enter Password' ?>" 
-                       <?= $edit_mode ? '' : 'required' ?>>
+                    placeholder="Enter Username" 
+                    value="<?= $edit_mode ? htmlspecialchars($edit_personnel['Username']) : '' ?>" required>
 
                 <?php if ($edit_mode): ?>
-                <label>Status:</label>
-                <select name="status" form="personnel-form" class="last-name-input">
-                    <option value="active" <?= ($edit_personnel['Status'] == 'active') ? 'selected' : '' ?>>Active</option>
-                    <option value="inactive" <?= ($edit_personnel['Status'] == 'inactive') ? 'selected' : '' ?>>Inactive</option>
-                </select>
+                    <label>New Password:</label>
+                    <input type="password" name="password" form="personnel-form" class="last-name-input" 
+                        placeholder="Enter new password (leave blank to keep current)">
+                <?php else: ?>
+                    <label>Password:</label>
+                    <input type="password" name="password" form="personnel-form" class="last-name-input" 
+                        placeholder="Enter Password" required>
+                        
+                    <label>Confirm Password:</label>
+                    <input type="password" name="confirm_password" form="personnel-form" class="last-name-input" 
+                        placeholder="Confirm Password" required>
+                <?php endif; ?>
+
+                <?php if ($edit_mode): ?>
+                    <label>Status:</label>
+                    <select name="status" form="personnel-form" class="last-name-input">
+                        <option value="active" <?= ($edit_personnel['Status'] == 'active') ? 'selected' : '' ?>>Active</option>
+                        <option value="inactive" <?= ($edit_personnel['Status'] == 'inactive') ? 'selected' : '' ?>>Inactive</option>
+                    </select>
                 <?php endif; ?>
 
                 <div class="input-button-container">
@@ -277,22 +318,14 @@ $result = $stmt->get_result();
             </div>
         </div>
 
-        <!-- Search Container -->
-        <div class="search-container">
-            <form action="personnel.php" method="GET">
-                <input type="text" name="search" class="search-input" 
-                       placeholder="Search personnel..." 
-                       value="<?= htmlspecialchars($search_term) ?>">
-                <button type="submit" class="search-btn">
-                    <i class="fas fa-search"></i> Search
-                </button>
-                <?php if (!empty($search_term)): ?>
-                    <a href="personnel.php" class="search-btn">
-                        <i class="fas fa-times"></i> Clear
-                    </a>
-                <?php endif; ?>
-            </form>
-        </div>
+     
+         <!-- Search Form -->
+        <form action="personnel.php" method="POST">
+            <div class="search-container">
+            <input type="text" class="search-input" name="search" placeholder="Search" value="<?= htmlspecialchars($search_term) ?>">
+                <button type="submit" class="search-btn"><i class="fas fa-search"></i> Search</button>  
+            </div>
+        </form>
 
         <div class="table-container">
             <table>
@@ -379,4 +412,4 @@ $result = $stmt->get_result();
 </main>
 
 
-<link rel="stylesheet" href="css/classification.css">
+<link rel="stylesheet" href="css/personnel.css">
