@@ -3,7 +3,7 @@
 if (isset($_GET['delete'])) {
     include 'db.php';
     $id = $_GET['delete'];
-    $stmt = $conn->prepare("DELETE FROM authors WHERE author_id = ?");
+    $stmt = $conn->prepare("DELETE FROM authors WHERE AuthorID = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $stmt->close();
@@ -17,11 +17,11 @@ include 'db.php';
 
 // Add Author
 if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['add_author'])) {
-    $first_name = trim($_POST['first_name']);
-    $middle_name = trim($_POST['middle_name']);
-    $last_name = trim($_POST['last_name']);
+    $first_name = trim($_POST['FirstName']);
+    $middle_name = trim($_POST['MiddleName']);
+    $last_name = trim($_POST['LastName']);
 
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM authors WHERE first_name = ? AND middle_name = ? AND last_name = ?");
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM authors WHERE FirstName = ? AND MiddleName = ? AND LastName = ?");
     $stmt->bind_param("sss", $first_name, $middle_name, $last_name);
     $stmt->execute();
     $stmt->bind_result($count);
@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['add_author'])) {
     if ($count > 0) {
         echo "<script>alert('Error: Author already exists!');</script>";
     } else {
-        $stmt = $conn->prepare("INSERT INTO authors (first_name, middle_name, last_name) VALUES (?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO authors (FirstName, MiddleName, LastName) VALUES (?, ?, ?)");
         $stmt->bind_param("sss", $first_name, $middle_name, $last_name);
         if ($stmt->execute()) {
             echo "<script>alert('Author added successfully');</script>";
@@ -49,7 +49,7 @@ $edit_author = [];
 if (isset($_GET['edit'])) {
     $edit_mode = true;
     $id = $_GET['edit'];
-    $stmt = $conn->prepare("SELECT * FROM authors WHERE author_id = ?");
+    $stmt = $conn->prepare("SELECT * FROM authors WHERE AuthorID = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $result_edit = $stmt->get_result();
@@ -59,12 +59,12 @@ if (isset($_GET['edit'])) {
 
 // Update Author
 if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['update_author'])) {
-    $id = $_POST['author_id'];
-    $first_name = trim($_POST['first_name']);
-    $middle_name = trim($_POST['middle_name']);
-    $last_name = trim($_POST['last_name']);
+    $id = $_POST['AuthorID'];
+    $first_name = trim($_POST['FirstName']);
+    $middle_name = trim($_POST['MiddleName']);
+    $last_name = trim($_POST['LastName']);
 
-    $stmt = $conn->prepare("UPDATE authors SET first_name = ?, middle_name = ?, last_name = ? WHERE author_id = ?");
+    $stmt = $conn->prepare("UPDATE authors SET FirstName = ?, MiddleName = ?, LastName = ? WHERE AuthorID = ?");
     $stmt->bind_param("sssi", $first_name, $middle_name, $last_name, $id);
     if ($stmt->execute()) {
         echo "<script>alert('Author updated successfully'); window.location='author.php';</script>";
@@ -88,7 +88,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['search_query'])) {
     $search = trim($_POST['search_query']);
     if (!empty($search)) {
         $search_param = "%$search%";
-        $search_condition = "WHERE first_name LIKE ? OR middle_name LIKE ? OR last_name LIKE ?";
+        $search_condition = "WHERE FirstName LIKE ? OR MiddleName LIKE ? OR LastName LIKE ?";
         $count_params = [$search_param, $search_param, $search_param];
         $total_pages_query = "SELECT COUNT(*) as total FROM authors $search_condition";
     }
@@ -129,14 +129,14 @@ if (!empty($search_condition)) {
 
         <div class="form-container">
             <form action="author.php" method="POST">
-                <input type="hidden" name="author_id" value="<?= $edit_mode ? htmlspecialchars($edit_author['author_id']) : '' ?>">
+                <input type="hidden" name="AuthorID" value="<?= $edit_mode ? htmlspecialchars($edit_author['AuthorID']) : '' ?>">
                 <label>First Name:</label>
-                <input type="text" name="first_name" placeholder="Enter First Name" value="<?= $edit_mode ? htmlspecialchars($edit_author['first_name']) : '' ?>" required>
+                <input type="text" name="FirstName" placeholder="Enter First Name" value="<?= $edit_mode ? htmlspecialchars($edit_author['FirstName']) : '' ?>" required>
                 <label>Middle Name:</label>
-                <input type="text" name="middle_name" placeholder="Enter Middle Name" value="<?= $edit_mode ? htmlspecialchars($edit_author['middle_name']) : '' ?>">
+                <input type="text" name="MiddleName" placeholder="Enter Middle Name" value="<?= $edit_mode ? htmlspecialchars($edit_author['MiddleName']) : '' ?>">
                 <label>Last Name:</label>
                 <div class="input-button-container">
-                    <input type="text" name="last_name" class="last-name-input" placeholder="Enter Last Name" value="<?= $edit_mode ? htmlspecialchars($edit_author['last_name']) : '' ?>" required>
+                    <input type="text" name="LastName" class="last-name-input" placeholder="Enter Last Name" value="<?= $edit_mode ? htmlspecialchars($edit_author['LastName']) : '' ?>" required>
                     <?php if ($edit_mode): ?>
                         <div class="button-group">
                             <button type="submit" name="update_author" class="add-btn">Update</button>
@@ -173,13 +173,13 @@ if (!empty($search_condition)) {
                     <?php if ($result->num_rows > 0): ?>
                         <?php while ($row = $result->fetch_assoc()): ?>
                         <tr>
-                            <td><?= htmlspecialchars($row['author_id']) ?></td>
-                            <td><?= htmlspecialchars($row['first_name']) ?></td>
-                            <td><?= htmlspecialchars($row['middle_name']) ?></td>
-                            <td><?= htmlspecialchars($row['last_name']) ?></td>
+                            <td><?= htmlspecialchars($row['AuthorID']) ?></td>
+                            <td><?= htmlspecialchars($row['FirstName']) ?></td>
+                            <td><?= htmlspecialchars($row['MiddleName']) ?></td>
+                            <td><?= htmlspecialchars($row['LastName']) ?></td>
                             <td>
-                                <a href="author.php?edit=<?= $row['author_id'] ?>" class="edit"><i class="fas fa-edit"></i> Edit</a>
-                                <a href="author.php?delete=<?= $row['author_id'] ?>" class="delete" onclick="return confirmDelete(<?= $row['author_id'] ?>)"><i class="fas fa-trash"></i> Delete</a>
+                                <a href="author.php?edit=<?= $row['AuthorID'] ?>" class="edit"><i class="fas fa-edit"></i> Edit</a>
+                                <a href="author.php?delete=<?= $row['AuthorID'] ?>" class="delete" onclick="return confirmDelete(<?= $row['AuthorID'] ?>)"><i class="fas fa-trash"></i> Delete</a>
                             </td>
                         </tr>
                         <?php endwhile; ?>
@@ -215,6 +215,5 @@ function confirmDelete(id) {
     return confirm("Are you sure you want to delete this author?");
 }
 </script>
-
 
 <link rel="stylesheet" href="css/author.css">
