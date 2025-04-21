@@ -30,7 +30,6 @@ h2 {
     margin: 0; /* Ensure no extra margin around elements */
 }
 
-
 /* Add a max-width to the search input if needed */
 .filter-form input[name="search"] {
     flex: 2; /* Give search input more space compared to other elements */
@@ -91,12 +90,9 @@ input, select {
     margin: 0 auto; /* Centers the button horizontally */
 }
 
-
-
 .form-container{
     margin-top: 30px;
 }
-
 
 .add-btn:hover {
     background-color: #5a6268;
@@ -139,8 +135,6 @@ input, select {
     border-radius: 5px;
     cursor: pointer;
     white-space: nowrap; /* Prevents the button from stretching */
- 
-
 }
 
 .search-btn i {
@@ -187,8 +181,6 @@ th, td {
     padding: 8px;
     border: 1px solid #ccc;
 }
-
-
 
 /* Pagination */
 .pagination {
@@ -247,17 +239,42 @@ th, td {
     }
 }
 
-/* Button Group */
+/* Button Group - Updated for proper alignment */
 .button-group {
     display: flex;
+    justify-content: center; /* Center the buttons */
+    gap: 15px; /* Space between buttons */
+    margin-top: 15px;
+    margin-bottom: 20px;
+}
 
-    justify-content: flex-start; /* Align buttons to the left */
+/* Update and Cancel buttons with consistent styling */
+.update-btn, .cancel-btn {
+    padding: 10px 25px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    text-decoration: none;
+    display: inline-block;
+    line-height: 1.5; /* Ensure consistent height */
+    vertical-align: middle; /* Align vertically */
+    box-sizing: border-box; /* Ensure padding doesn't affect overall size */
+    height: 45px; /* Fix consistent height */
+}
+
+.update-btn {
+    background-color: #FF0000; /* Red color matching your design */
+    color: white;
 }
 
 .cancel-btn {
     background-color: #f44336;
     color: white;
-    text-decoration: none;
+}
+
+.update-btn:hover {
+    background-color: #d10000;
 }
 
 .cancel-btn:hover {

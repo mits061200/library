@@ -131,6 +131,7 @@ $categories = $conn->query("SELECT CategoryID, CategoryName FROM category")->fet
 $materials = $conn->query("SELECT MaterialID, MaterialName FROM material")->fetch_all(MYSQLI_ASSOC);
 $locations = $conn->query("SELECT LocationID, LocationName FROM location")->fetch_all(MYSQLI_ASSOC);
 $mainClassifications = $conn->query("SELECT MainClassificationID, Description AS MainClassificationName FROM mainclassification")->fetch_all(MYSQLI_ASSOC);
+$subClassifications = $conn->query("SELECT SubClassificationID, Description FROM subclassification")->fetch_all(MYSQLI_ASSOC);
 ?>
 
 
@@ -269,11 +270,22 @@ $mainClassifications = $conn->query("SELECT MainClassificationID, Description AS
                     </select>
                 </div>
                 <div class="input-group">
-                    <label for="sub-classification">Sub Classification</label>
-                    <select id="sub-classification" name="SubClassificationID" required>
-                        <option value="" disabled <?= !$edit_mode ? 'selected' : '' ?>>Select Sub Classification</option>
-                        <!-- Sub classifications will be dynamically populated via JavaScript -->
-                    </select>
+                <label for="subClassification">Sub Classification</label>
+                <select id="sub-classification" name="SubClassificationID" required>
+                    <option value="">-- Select Sub Classification --</option>
+                    <?php
+                    if ($edit_mode && isset($edit_book['MainClassificationID'])) {
+                        $main_id = $edit_book['MainClassificationID'];
+                        $subs = $conn->query("SELECT * FROM subclassification WHERE MainClassID = $main_id");
+                        while ($row = $subs->fetch_assoc()) {
+                            $selected = ($edit_mode && $edit_book['SubClassificationID'] == $row['SubClassificationID']) ? 'selected' : '';
+                            echo "<option value='{$row['SubClassificationID']}' $selected>" . htmlspecialchars($row['Description']) . "</option>";
+                        }
+                    }
+                    ?>
+                </select>
+
+
                 </div>
             </div>
 
@@ -461,11 +473,13 @@ function updateStatus() {
 <script>
 document.getElementById('main-classification').addEventListener('change', function () {
     const mainId = this.value;
+    const subSelect = document.getElementById('sub-classification');
+
+    subSelect.innerHTML = '<option value="">-- Loading... --</option>';
 
     fetch('get_sub_classifications.php?main_id=' + mainId)
         .then(response => response.json())
         .then(data => {
-            const subSelect = document.getElementById('sub-classification');
             subSelect.innerHTML = '<option value="">-- Select Sub Classification --</option>';
             data.forEach(sub => {
                 const option = document.createElement('option');
@@ -475,8 +489,8 @@ document.getElementById('main-classification').addEventListener('change', functi
             });
         })
         .catch(error => {
-            console.error('Error:', error);
+            console.error('Error loading sub classifications:', error);
         });
 });
-
 </script>
+
