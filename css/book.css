@@ -12,10 +12,12 @@ h2 {
 .filter-form {
     margin-bottom: 20px;
     display: flex;
-    gap: 10px;
-    flex-wrap: nowrap; /* Changed from wrap to nowrap */
+    gap: 5px; /* No gap between elements */
+    flex-wrap: nowrap;
     align-items: center;
-    width: 100%; /* Ensure the form takes full width */
+    width: 100%;
+    margin-left: 15px;
+    margin-top: 20px;
 }
 
 .filter-form input,
@@ -23,10 +25,11 @@ h2 {
 .filter-form button {
     padding: 8px;
     font-size: 14px;
-    min-width: 0; /* This allows flex items to shrink below content size if needed */
-    flex: 1; /* Make all elements take equal space */
-    margin-top: 30px;
+    min-width: 0;
+    flex: 1;
+    margin: 0; /* Ensure no extra margin around elements */
 }
+
 
 /* Add a max-width to the search input if needed */
 .filter-form input[name="search"] {
@@ -59,6 +62,7 @@ label {
     font-weight: bold;
     margin-bottom: 5px;
     font-size: 14px;
+    margin-left: 60px;
 }
 
 input, select {
@@ -67,7 +71,8 @@ input, select {
     border-radius: 5px;
     font-size: 14px;
     box-sizing: border-box;
-    width: 100%;
+    width: 350px;
+    margin-left: 100px;
 }
 
 /* Add Button */
@@ -165,6 +170,26 @@ th {
     background-color: #ddd;
 }
 
+table {
+    border-spacing: 0;
+    border-collapse: collapse;
+}
+
+td {
+    white-space: nowrap; /* Ensures text doesn't wrap */
+    padding: 8px; /* Adjust padding as needed */
+    border: 1px solid #ccc; /* Ensure the border is consistent */
+}
+
+th, td {
+    text-align: left;
+    vertical-align: top;
+    padding: 8px;
+    border: 1px solid #ccc;
+}
+
+
+
 /* Pagination */
 .pagination {
     display: flex;
@@ -225,24 +250,18 @@ th {
 /* Button Group */
 .button-group {
     display: flex;
-    gap: 10px;
+
+    justify-content: flex-start; /* Align buttons to the left */
 }
 
 .cancel-btn {
-    display: inline-block;
-    padding: 8px 15px;
-    background-color: red;
+    background-color: #f44336;
     color: white;
     text-decoration: none;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.3s;
 }
 
 .cancel-btn:hover {
-    background-color: #5a6268;
+    background-color: #d32f2f;
 }
 
 /* Table Buttons */
