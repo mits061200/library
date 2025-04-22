@@ -123,10 +123,18 @@
     font-size: 15px;
 }
 
+.search-btn:hover {
+    background-color: #5a6268;
+}
+
 /* Table Container */
 .table-container {
     border: 1px solid #ccc;
     margin-top: 20px;
+}
+
+.view:hover, .edit:hover, .delete:hover {
+    text-decoration: underline;
 }
 
 .table-container table {

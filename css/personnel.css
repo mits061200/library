@@ -77,6 +77,10 @@ input, select {
     margin-top: -40px;
 }
 
+.view:hover, .edit:hover, .delete:hover {
+    text-decoration: underline;
+}
+
 .search-input {
     flex: 1; /* Take up remaining space */
     padding: 10px;
@@ -111,7 +115,9 @@ input, select {
     font-size: 15px;
 }
 
-
+.search-btn:hover {
+    background-color: #5a6268;
+}
 
 table {
     width: 100%;

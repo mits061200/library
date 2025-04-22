@@ -100,7 +100,9 @@ input {
     font-size: 15px; /* Adjust icon size */
 }
 
-
+.search-btn:hover {
+    background-color: #5a6268;
+}
 
 table {
     width: 100%;
@@ -209,6 +211,10 @@ button.add-btn:hover, button.update-btn:hover {
 
 .cancel-btn:hover {
     background-color: #5a6268;
+}
+
+.view:hover, .edit:hover, .delete:hover {
+    text-decoration: underline;
 }
 
 textarea {

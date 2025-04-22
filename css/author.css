@@ -96,11 +96,17 @@ input {
     font-size: 13px;
 }
 
+.search-btn:hover {
+    background-color: #5a6268;
+}
+
 .search-btn i {
     font-size: 15px; /* Adjust icon size */
 }
 
-
+.view:hover, .edit:hover, .delete:hover {
+    text-decoration: underline;
+}
 
 table {
     width: 100%;

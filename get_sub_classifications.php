@@ -1,19 +1,19 @@
 <?php
 include 'db.php';
 
+header('Content-Type: application/json');
+
 if (isset($_GET['main_id'])) {
-    $main_id = intval($_GET['main_id']);
-    $stmt = $conn->prepare("SELECT SubClassificationID AS sub_classification_id, Description AS sub_classification_name FROM subclassification WHERE MainClassID = ?");
-    $stmt->bind_param("i", $main_id);
+    $mainId = (int)$_GET['main_id'];
+    $stmt = $conn->prepare("SELECT SubClassificationID, Description FROM subclassification WHERE MainClassID = ?");
+    $stmt->bind_param("i", $mainId);
     $stmt->execute();
     $result = $stmt->get_result();
-    $sub_classifications = [];
-
-    while ($row = $result->fetch_assoc()) {
-        $sub_classifications[] = $row;
-    }
-
-    header('Content-Type: application/json');
-    echo json_encode($sub_classifications);
+    $subClassifications = $result->fetch_all(MYSQLI_ASSOC);
+    
+    echo json_encode($subClassifications);
+    exit;
 }
+
+echo json_encode([]);
 ?>
