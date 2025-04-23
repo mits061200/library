@@ -24,7 +24,7 @@
                 <li><a href="material.php">Material</a></li>
                 <li><a href="location.php">Location</a></li>
                 <li><a href="personnel.php">Personnel</a></li>
-                <li><a href="borrowersr.php">Borrowers</a></li>
+                <li><a href="borrower.php">Borrowers</a></li>
                 <li><a href="penalty.php">Penalty</a></li>
                 <li><a href="supplier.php">Supplier</a></li>
                 <li><a href="book.php">Book</a></li>
