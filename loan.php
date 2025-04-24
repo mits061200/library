@@ -1,7 +1,11 @@
 <?php
+// Start session at the very beginning of the script
+session_start();
+
 include 'header.php';
 ?>
 <link rel="stylesheet" href="css/loan.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 <?php
 include 'navbar.php';
 
@@ -14,6 +18,7 @@ if ($conn->connect_error) {
 // Initialize variables
 $borrower_data = [];
 $book_data = [];
+$selected_books = []; // Array to store selected books
 $borrower_search = '';
 $book_search = '';
 $selected_category = 'All Categories';
@@ -21,30 +26,52 @@ $selected_location = 'All Location';
 $error_message = '';
 $success_message = '';
 
+// Get selected books from session if available
+if(isset($_SESSION['selected_books'])) {
+    $selected_books = $_SESSION['selected_books'];
+}
+
+// First, fetch a valid personnel ID that we can use for loans
+$valid_personnel_id = null;
+$personnel_query = "SELECT PersonnelID FROM personnel LIMIT 1";
+$personnel_result = $conn->query($personnel_query);
+if ($personnel_result && $personnel_result->num_rows > 0) {
+    $personnel_row = $personnel_result->fetch_assoc();
+    $valid_personnel_id = $personnel_row['PersonnelID'];
+}
+
 // Handle borrower search
-if (isset($_POST['search_borrower'])) {
-    $borrower_search = $conn->real_escape_string($_POST['borrower']);
+if (isset($_POST['search_borrower']) || isset($_POST['borrower_id'])) {
+    // Get borrower ID either from search or from hidden field
+    $borrower_id = isset($_POST['borrower_id']) ? $conn->real_escape_string($_POST['borrower_id']) : 
+                 (isset($_POST['borrower']) ? $conn->real_escape_string($_POST['borrower']) : '');
     
-    // First try direct ID match
-    $sql = "SELECT * FROM borrowers WHERE BorrowerID = '$borrower_search' LIMIT 1";
-    $result = $conn->query($sql);
-    
-    // If no direct match, try the search terms
-    if (!$result || $result->num_rows == 0) {
-        $sql = "SELECT * FROM borrowers WHERE 
-                BorrowerID LIKE '%$borrower_search%' OR 
-                FirstName LIKE '%$borrower_search%' OR 
-                LastName LIKE '%$borrower_search%' 
-                LIMIT 1";
-                
+    if (!empty($borrower_id)) {
+        // First try direct ID match
+        $sql = "SELECT * FROM borrowers WHERE BorrowerID = '$borrower_id' LIMIT 1";
         $result = $conn->query($sql);
+        
+        // If no direct match, try the search terms
+        if (!$result || $result->num_rows == 0) {
+            $sql = "SELECT * FROM borrowers WHERE 
+                    BorrowerID LIKE '%$borrower_id%' OR 
+                    FirstName LIKE '%$borrower_id%' OR 
+                    LastName LIKE '%$borrower_id%' 
+                    LIMIT 1";
+                    
+            $result = $conn->query($sql);
+        }
+        
+        if ($result && $result->num_rows > 0) {
+            $borrower_data = $result->fetch_assoc();
+            $_SESSION['borrower_data'] = $borrower_data; // Store borrower data in session
+        } else if (isset($_POST['search_borrower'])) { // Only show error if explicitly searching
+            $error_message = "Borrower not found";
+        }
     }
-    
-    if ($result && $result->num_rows > 0) {
-        $borrower_data = $result->fetch_assoc();
-    } else {
-        $error_message = "Borrower not found";
-    }
+} else if (isset($_SESSION['borrower_data'])) {
+    // Restore borrower data from session
+    $borrower_data = $_SESSION['borrower_data'];
 }
 
 // Get categories for dropdown
@@ -68,29 +95,17 @@ if ($result && $result->num_rows > 0) {
 }
 
 // Handle book search
-if (isset($_POST['search_book'])) {
-    $book_search = $conn->real_escape_string($_POST['book']);
-    $category_filter = $_POST['category'] !== 'All Categories' ? "AND b.CategoryID = " . intval($_POST['category']) : "";
-    $location_filter = $_POST['location'] !== 'All Location' ? "AND b.LocationID = " . intval($_POST['location']) : "";
+if (isset($_POST['search_book']) || isset($_POST['book_id'])) {
+    $book_id = isset($_POST['book_id']) ? $conn->real_escape_string($_POST['book_id']) : 
+               (isset($_POST['book']) ? $conn->real_escape_string($_POST['book']) : '');
     
-    // First try direct ID match
-    $sql = "SELECT b.*, a.FirstName AS AuthorFirstName, a.MiddleName AS AuthorMiddleName, 
-            a.LastName AS AuthorLastName, m.MaterialName AS Category,
-            mc.ClassificationNumber, mc.Description AS Classification,
-            l.LocationName
-            FROM book b
-            LEFT JOIN authors a ON b.AuthorID = a.AuthorID
-            LEFT JOIN material m ON b.MaterialID = m.MaterialID
-            LEFT JOIN mainclassification mc ON b.MainClassificationID = mc.MainClassificationID
-            LEFT JOIN location l ON b.LocationID = l.LocationID
-            WHERE b.BookID = '$book_search'
-            AND b.Status = 'Available'
-            LIMIT 1";
+    $category_filter = (isset($_POST['category']) && $_POST['category'] !== 'All Categories') ? 
+                      "AND b.CategoryID = " . intval($_POST['category']) : "";
+    $location_filter = (isset($_POST['location']) && $_POST['location'] !== 'All Location') ? 
+                      "AND b.LocationID = " . intval($_POST['location']) : "";
     
-    $result = $conn->query($sql);
-    
-    // If no direct match, try the search terms
-    if (!$result || $result->num_rows == 0) {
+    if (!empty($book_id)) {
+        // First try direct ID match
         $sql = "SELECT b.*, a.FirstName AS AuthorFirstName, a.MiddleName AS AuthorMiddleName, 
                 a.LastName AS AuthorLastName, m.MaterialName AS Category,
                 mc.ClassificationNumber, mc.Description AS Classification,
@@ -100,69 +115,121 @@ if (isset($_POST['search_book'])) {
                 LEFT JOIN material m ON b.MaterialID = m.MaterialID
                 LEFT JOIN mainclassification mc ON b.MainClassificationID = mc.MainClassificationID
                 LEFT JOIN location l ON b.LocationID = l.LocationID
-                WHERE (b.Title LIKE '%$book_search%' OR 
-                      b.ISBN LIKE '%$book_search%' OR
-                      b.AccessionNumber LIKE '%$book_search%')
-                      $category_filter
-                      $location_filter
-                      AND b.Status = 'Available'
+                WHERE b.BookID = '$book_id'
+                AND b.Status = 'Available'
                 LIMIT 1";
         
         $result = $conn->query($sql);
-    }
-    
-    if ($result && $result->num_rows > 0) {
-        $book_data = $result->fetch_assoc();
-    } else {
-        $error_message = "Book not found or not available";
+        
+        // If no direct match, try the search terms
+        if (!$result || $result->num_rows == 0) {
+            $sql = "SELECT b.*, a.FirstName AS AuthorFirstName, a.MiddleName AS AuthorMiddleName, 
+                    a.LastName AS AuthorLastName, m.MaterialName AS Category,
+                    mc.ClassificationNumber, mc.Description AS Classification,
+                    l.LocationName
+                    FROM book b
+                    LEFT JOIN authors a ON b.AuthorID = a.AuthorID
+                    LEFT JOIN material m ON b.MaterialID = m.MaterialID
+                    LEFT JOIN mainclassification mc ON b.MainClassificationID = mc.MainClassificationID
+                    LEFT JOIN location l ON b.LocationID = l.LocationID
+                    WHERE (b.Title LIKE '%$book_id%' OR 
+                          b.ISBN LIKE '%$book_id%' OR
+                          b.AccessionNumber LIKE '%$book_id%')
+                          $category_filter
+                          $location_filter
+                          AND b.Status = 'Available'
+                    LIMIT 1";
+            
+            $result = $conn->query($sql);
+        }
+        
+        if ($result && $result->num_rows > 0) {
+            $book_data = $result->fetch_assoc();
+        } else if (isset($_POST['search_book'])) { // Only show error if explicitly searching
+            $error_message = "Book not found or not available";
+        }
     }
 }
 
-// Process loan submission
-if (isset($_POST['submit_loan'])) {
-    // Validate required fields
-    if (empty($_POST['borrower_id']) || empty($_POST['book_id']) || empty($_POST['date_loan']) || empty($_POST['due_date'])) {
-        $error_message = "All fields are required";
+// Handle adding a book to selection
+if (isset($_POST['add_book']) && !empty($book_data) && count($selected_books) < 3) {
+    // Check if book is already selected
+    $book_exists = false;
+    foreach ($selected_books as $book) {
+        if ($book['BookID'] == $book_data['BookID']) {
+            $book_exists = true;
+            break;
+        }
+    }
+    
+    if (!$book_exists) {
+        // Add current date and due date to book data
+        $book_data['date_loan'] = date('Y-m-d');
+        $book_data['due_date'] = date('Y-m-d', strtotime('+7 days'));
+        
+        // Add book to selected books
+        $selected_books[] = $book_data;
+        $_SESSION['selected_books'] = $selected_books;
+        $success_message = "Book added to selection. " . (3 - count($selected_books)) . " more book(s) can be selected.";
     } else {
-        $borrower_id = $conn->real_escape_string($_POST['borrower_id']);
-        $book_id = $conn->real_escape_string($_POST['book_id']);
-        $date_loan = $conn->real_escape_string($_POST['date_loan']);
-        $due_date = $conn->real_escape_string($_POST['due_date']);
-        $personnel_id = isset($_SESSION['personnel_id']) ? $_SESSION['personnel_id'] : 'ADMIN';
+        $error_message = "This book is already in your selection.";
+    }
+    
+    // Clear book data to allow new search
+    $book_data = [];
+}
+
+// Handle removing a book from selection
+if (isset($_POST['remove_book']) && isset($_POST['remove_index'])) {
+    $index = intval($_POST['remove_index']);
+    if (isset($selected_books[$index])) {
+        array_splice($selected_books, $index, 1);
+        $_SESSION['selected_books'] = $selected_books;
+        $success_message = "Book removed from selection.";
+    }
+}
+
+// Process loan submission for multiple books
+if (isset($_POST['submit_loan']) && !empty($selected_books) && !empty($borrower_data)) {
+    // Validate required fields
+    if ($valid_personnel_id === null) {
+        $error_message = "No valid personnel found in the system. Please add personnel before creating loans.";
+    } else {
+        $borrower_id = $borrower_data['BorrowerID'];
+        $personnel_id = $valid_personnel_id;
+        $loan_success = true;
+        $loan_errors = [];
         
         // Start transaction
         $conn->begin_transaction();
         
         try {
-            // Insert into loan table
-            $sql = "INSERT INTO loan (BorrowerID, BookID, DateBorrowed, DueDate, PersonnelID, Status) 
-                   VALUES ('$borrower_id', '$book_id', '$date_loan', '$due_date', '$personnel_id', 'borrowed')";
-            
-            if (!$conn->query($sql)) {
-                throw new Exception("Error recording loan: " . $conn->error);
-            }
-            
-            // Update book status to 'On Loan'
-            $sql = "UPDATE book SET Status = 'On Loan' WHERE BookID = '$book_id'";
-            if (!$conn->query($sql)) {
-                throw new Exception("Error updating book status: " . $conn->error);
+            foreach ($selected_books as $book) {
+                $book_id = $book['BookID'];
+                $date_loan = $conn->real_escape_string($book['date_loan']);
+                $due_date = $conn->real_escape_string($book['due_date']);
+                
+                // Insert into loan table
+                $sql = "INSERT INTO loan (BorrowerID, BookID, DateBorrowed, DueDate, PersonnelID, Status) 
+                       VALUES ('$borrower_id', '$book_id', '$date_loan', '$due_date', '$personnel_id', 'borrowed')";
+                
+                if (!$conn->query($sql)) {
+                    throw new Exception("Error recording loan for book ID $book_id: " . $conn->error);
+                }
+                
+                // Update book status to 'On Loan'
+                $sql = "UPDATE book SET Status = 'On Loan' WHERE BookID = '$book_id'";
+                if (!$conn->query($sql)) {
+                    throw new Exception("Error updating status for book ID $book_id: " . $conn->error);
+                }
             }
             
             $conn->commit();
-            $success_message = "Book loaned successfully!";
+            $success_message = count($selected_books) . " book(s) loaned successfully!";
             
-            // Keep the borrower and book data for display
-            $borrower_data = $conn->query("SELECT * FROM borrowers WHERE BorrowerID = '$borrower_id'")->fetch_assoc();
-            $book_data = $conn->query("SELECT b.*, a.FirstName AS AuthorFirstName, a.MiddleName AS AuthorMiddleName, 
-                                      a.LastName AS AuthorLastName, m.MaterialName AS Category,
-                                      mc.ClassificationNumber, mc.Description AS Classification,
-                                      l.LocationName
-                                      FROM book b
-                                      LEFT JOIN authors a ON b.AuthorID = a.AuthorID
-                                      LEFT JOIN material m ON b.MaterialID = m.MaterialID
-                                      LEFT JOIN mainclassification mc ON b.MainClassificationID = mc.MainClassificationID
-                                      LEFT JOIN location l ON b.LocationID = l.LocationID
-                                      WHERE b.BookID = '$book_id'")->fetch_assoc();
+            // Clear session data after successful loan
+            $selected_books = [];
+            $_SESSION['selected_books'] = [];
             
         } catch (Exception $e) {
             $conn->rollback();
@@ -241,9 +308,80 @@ $default_due_date = date('Y-m-d', strtotime('+7 days'));
                 <?php endif; ?>
             </div>
 
-            <!-- Book Search -->
+            <!-- Selected Books Section -->
+            <?php if (!empty($selected_books)): ?>
+            <div class="selected-books-section">
+                <h3 class="section-title">Selected Books (<?php echo count($selected_books); ?>/3)</h3>
+                <div class="selected-books-list">
+                    <table class="selected-books-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>ISBN</th>
+                                <th>Date Loan</th>
+                                <th>Due Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($selected_books as $index => $book): ?>
+                            <tr>
+                                <td><?php echo $index + 1; ?></td>
+                                <td><?php echo $book['Title']; ?></td>
+                                <td>
+                                    <?php 
+                                        $author = $book['AuthorFirstName'];
+                                        if (!empty($book['AuthorMiddleName'])) {
+                                            $author .= ' ' . $book['AuthorMiddleName'];
+                                        }
+                                        $author .= ' ' . $book['AuthorLastName'];
+                                        echo $author;
+                                    ?>
+                                </td>
+                                <td><?php echo $book['ISBN']; ?></td>
+                                <td>
+                                    <input type="date" class="date-input" name="date_loan_<?php echo $index; ?>" 
+                                           value="<?php echo $book['date_loan']; ?>" 
+                                           min="<?php echo $today; ?>"
+                                           onchange="updateBookDate(<?php echo $index; ?>, 'date_loan', this.value)">
+                                </td>
+                                <td>
+                                    <input type="date" class="date-input" name="due_date_<?php echo $index; ?>" 
+                                           value="<?php echo $book['due_date']; ?>"
+                                           min="<?php echo $book['date_loan']; ?>"
+                                           onchange="updateBookDate(<?php echo $index; ?>, 'due_date', this.value)">
+                                </td>
+                                <td>
+                                    <form method="POST" action="" style="display: inline;">
+                                        <input type="hidden" name="remove_index" value="<?php echo $index; ?>">
+                                        <!-- Add hidden field to preserve borrower ID -->
+                                        <?php if (!empty($borrower_data)): ?>
+                                        <input type="hidden" name="borrower_id" value="<?php echo $borrower_data['BorrowerID']; ?>">
+                                        <?php endif; ?>
+                                        <button type="submit" name="remove_book" class="remove-btn">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Book Search (Only show if less than 3 books selected) -->
+            <?php if (count($selected_books) < 3): ?>
             <h3 class="section-title">Book Information</h3>
             <form class="search-form" method="POST" action="">
+                <!-- Add hidden field to preserve borrower ID -->
+                <?php if (!empty($borrower_data)): ?>
+                <input type="hidden" name="borrower_id" value="<?php echo $borrower_data['BorrowerID']; ?>">
+                <?php endif; ?>
+                
                 <i class="fas fa-search"></i>
                 <div class="search-container">
                     <input type="text" class="search-input" id="book-search" name="book" placeholder="Search by Title, ISBN, or Accession Number" value="<?php echo isset($_POST['book']) ? htmlspecialchars($_POST['book']) : ''; ?>">
@@ -284,46 +422,53 @@ $default_due_date = date('Y-m-d', strtotime('+7 days'));
                         ?> 
                         <span class="gap"></span> <strong>Status:</strong> <?php echo $book_data['Status']; ?>
                     </p>
-                    <p><strong>Call Number:</strong> <?php echo $book_data['CallNumber']; ?> <span class="gap"></span> <strong>Date Loan:</strong> 
-                        <input type="date" class="date-input" name="date_loan" value="<?php echo $today; ?>" form="loan_form">
-                    </p>
-                    <p><strong>No. of Copy:</strong> <?php echo $book_data['TotalCopies'] - $book_data['HoldCopies']; ?> available of <?php echo $book_data['TotalCopies']; ?> <span class="gap"></span> <strong>Due Date:</strong> 
-                        <input type="date" class="date-input" name="due_date" value="<?php echo $default_due_date; ?>" form="loan_form">
-                    </p>
+                    <p><strong>Call Number:</strong> <?php echo $book_data['CallNumber']; ?> <span class="gap"></span> <strong>Date Loan:</strong> <?php echo $today; ?></p>
+                    <p><strong>No. of Copy:</strong> <span id="available-copies"><?php echo $book_data['TotalCopies'] - $book_data['HoldCopies']; ?></span> available of <?php echo $book_data['TotalCopies']; ?> <span class="gap"></span> <strong>Due Date:</strong> <?php echo $default_due_date; ?></p>
                     <p><strong>Subject:</strong> <?php echo $book_data['ClassificationNumber']; ?> <span class="gap"></span> <strong>Year:</strong> <?php echo $book_data['Year']; ?></p>
                     <p><strong>Publisher:</strong> <?php echo $book_data['Publisher']; ?> <span class="gap"></span> <strong>Edition:</strong> <?php echo $book_data['Edition']; ?></p>
                     <p><strong>Accession Number:</strong> <?php echo $book_data['AccessionNumber']; ?> <span class="gap"></span> <strong>Location:</strong> <?php echo $book_data['LocationName']; ?></p>
                     <p><strong>Price:</strong> <?php echo number_format($book_data['Price'], 2); ?></p>
+                    
+                    <!-- Add Book Button -->
+                    <form method="POST" action="">
+                        <input type="hidden" name="book_id" value="<?php echo $book_data['BookID']; ?>">
+                        <!-- Add hidden field to preserve borrower ID -->
+                        <?php if (!empty($borrower_data)): ?>
+                        <input type="hidden" name="borrower_id" value="<?php echo $borrower_data['BorrowerID']; ?>">
+                        <?php endif; ?>
+                        <button type="submit" name="add_book" class="add-btn" <?php echo (empty($borrower_data)) ? 'disabled' : ''; ?>>
+                            <i class="fas fa-plus"></i> Add Book
+                        </button>
+                    </form>
                 <?php else: ?>
                     <p><strong>Title:</strong> <span class="gap"></span> <strong>Category:</strong></p>
                     <p><strong>ISBN:</strong> <span class="gap"></span> <strong>Classification:</strong></p>
                     <p><strong>Author:</strong> <span class="gap"></span> <strong>Status:</strong></p>
-                    <p><strong>Call Number:</strong> <span class="gap"></span> <strong>Date Loan:</strong> 
-                        <input type="date" class="date-input" name="date_loan" value="<?php echo $today; ?>" form="loan_form">
-                    </p>
-                    <p><strong>No. of Copy:</strong> <span class="gap"></span> <strong>Due Date:</strong> 
-                        <input type="date" class="date-input" name="due_date" value="<?php echo $default_due_date; ?>" form="loan_form">
-                    </p>
+                    <p><strong>Call Number:</strong> <span class="gap"></span> <strong>Date Loan:</strong> <?php echo $today; ?></p>
+                    <p><strong>No. of Copy:</strong> <span class="gap"></span> <strong>Due Date:</strong> <?php echo $default_due_date; ?></p>
                     <p><strong>Subject:</strong> <span class="gap"></span> <strong>Year:</strong></p>
                     <p><strong>Publisher:</strong> <span class="gap"></span> <strong>Edition:</strong></p>
                     <p><strong>Accession Number:</strong> <span class="gap"></span> <strong>Location:</strong></p>
                     <p><strong>Price:</strong></p>
                 <?php endif; ?>
             </div>
+            <?php endif; ?>
 
             <!-- Action Buttons -->
             <form id="loan_form" method="POST" action="">
-                <?php if (!empty($borrower_data)): ?>
-                    <input type="hidden" name="borrower_id" value="<?php echo $borrower_data['BorrowerID']; ?>">
+                <!-- Add hidden field for personnel ID -->
+                <?php if ($valid_personnel_id): ?>
+                    <input type="hidden" name="personnel_id" value="<?php echo $valid_personnel_id; ?>">
                 <?php endif; ?>
                 
-                <?php if (!empty($book_data)): ?>
-                    <input type="hidden" name="book_id" value="<?php echo $book_data['BookID']; ?>">
+                <!-- Add hidden field to preserve borrower ID -->
+                <?php if (!empty($borrower_data)): ?>
+                <input type="hidden" name="borrower_id" value="<?php echo $borrower_data['BorrowerID']; ?>">
                 <?php endif; ?>
                 
                 <div class="button-group">
-                    <button type="submit" name="submit_loan" class="add-btn" <?php echo (empty($borrower_data) || empty($book_data)) ? 'disabled' : ''; ?>>
-                        Loan Book
+                    <button type="submit" name="submit_loan" class="add-btn" <?php echo (empty($borrower_data) || empty($selected_books) || !$valid_personnel_id) ? 'disabled' : ''; ?>>
+                        Loan <?php echo count($selected_books); ?> Book<?php echo count($selected_books) != 1 ? 's' : ''; ?>
                     </button>
                     <a href="loan.php" class="cancel-btn">Cancel</a>
                 </div>
@@ -378,6 +523,16 @@ document.addEventListener('DOMContentLoaded', function() {
                             searchTrigger.name = 'search_borrower';
                             searchTrigger.value = '1';
                             borrowerForm.appendChild(searchTrigger);
+                            
+                            // Preserve book ID if already selected
+                            const bookIdField = document.querySelector('input[name="book_id"]');
+                            if (bookIdField) {
+                                let bookIdInput = document.createElement('input');
+                                bookIdInput.type = 'hidden';
+                                bookIdInput.name = 'book_id';
+                                bookIdInput.value = bookIdField.value;
+                                borrowerForm.appendChild(bookIdInput);
+                            }
                             
                             // Submit form
                             borrowerForm.submit();
@@ -440,6 +595,16 @@ document.addEventListener('DOMContentLoaded', function() {
                             searchTrigger.name = 'search_book';
                             searchTrigger.value = '1';
                             bookForm.appendChild(searchTrigger);
+                            
+                            // Preserve borrower ID if already selected
+                            const borrowerIdField = document.querySelector('input[name="borrower_id"]');
+                            if (borrowerIdField) {
+                                let borrowerIdInput = document.createElement('input');
+                                borrowerIdInput.type = 'hidden';
+                                borrowerIdInput.name = 'borrower_id';
+                                borrowerIdInput.value = borrowerIdField.value;
+                                bookForm.appendChild(borrowerIdInput);
+                            }
                             
                             // Submit form
                             bookForm.submit();
