@@ -1,0 +1,205 @@
+.loan-section {
+    margin-top: -230px;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Header */
+.loan-section h2 {
+    background-color: #ccc;
+    font-size: 25px;
+    font-weight: bold;
+    padding: 5px 5px;
+    margin-bottom: 10px;
+}
+
+/* Tab Buttons */
+.loan-section .tab-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.loan-section .tab-btn {
+    background-color: white;
+    border: 1px solid #ccc;
+    padding: 10px 25px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.loan-section .tab-btn.active {
+    background-color: #ccc;
+}
+
+.loan-section .arrow {
+    margin: 0 10px;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+/* Section Title */
+.loan-section .section-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 20px 0 10px;
+}
+
+
+/* Styles for the suggestion containers and items */
+
+
+.search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.suggestions-container {
+    position: absolute;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    display: none;
+}
+
+.suggestion-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.suggestion-item:hover {
+    background-color: #f5f5f5;
+}
+
+.suggestion-item.active {
+    background-color: #e8f0fe;
+    font-weight: 500;
+}
+
+/* Search Input */
+.loan-section .search-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: left;
+    margin: 0 0 20px 10px;
+}
+
+.loan-section .search-form i {
+    font-size: 16px;
+    margin-right: 5px;
+    color: #555;
+}
+
+.loan-section .search-input {
+    padding: 10px;
+    width: 300px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.loan-section .dropdown {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 150px;
+}
+
+.loan-section .search-btn {
+    background-color: red;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.loan-section .search-btn:hover {
+    background-color: #5a6268;
+}
+
+/* Borrower + Book Info Box */
+.loan-section .borrower-info {
+    background-color: white;
+    border: 1px solid #ccc;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* Info spacing */
+.loan-section .gap {
+    display: inline-block;
+    width: 50px;
+}
+
+/* Buttons */
+.loan-section .button-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.loan-section .add-btn,
+.loan-section .cancel-btn {
+    padding: 10px 20px;
+    font-weight: bold;
+    border-radius: 5px;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+.loan-section .add-btn {
+    background-color: red;
+}
+
+.loan-section .cancel-btn {
+    background-color: #888;
+}
+
+.loan-section .cancel-btn:hover,
+.loan-section .add-btn:hover {
+    background-color: #5a6268;
+}
+
+/* Date Fields */
+.loan-section .date-input {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-left: 10px;
+    width: 160px;
+}
+
+/* Responsive (Optional) */
+@media screen and (max-width: 768px) {
+    .loan-section .search-form {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .loan-section .button-group {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .loan-section .dropdown,
+    .loan-section .search-input {
+        width: 100%;
+    }
+}
