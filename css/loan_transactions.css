@@ -1,0 +1,306 @@
+.loan-section {
+    margin-top: -230px;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Header */
+.loan-section h2 {
+    background-color: #ccc;
+    font-size: 25px;
+    font-weight: bold;
+    padding: 5px 5px;
+    margin-bottom: 10px;
+}
+
+/* Tab Buttons */
+.loan-section .tab-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.loan-section .tab-btn {
+    background-color: white;
+    border: 1px solid #ccc;
+    padding: 10px 25px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.loan-section .tab-btn.active {
+    background-color: #ccc;
+}
+
+.loan-section .arrow {
+    margin: 0 10px;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+/* Section Title */
+.loan-section .section-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 20px 0 10px;
+}
+
+/* Search Input */
+.loan-section .search-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: left;
+    margin: 0 0 20px 10px;
+}
+
+.loan-section .search-form i {
+    font-size: 16px;
+    margin-right: 5px;
+    color: #555;
+}
+
+.loan-section .search-container {
+    position: relative;
+}
+
+.loan-section .search-input {
+    padding: 10px;
+    width: 300px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.loan-section .suggestions-container {
+    position: absolute;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    display: none;
+}
+
+.loan-section .suggestion-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.loan-section .suggestion-item:hover {
+    background-color: #f5f5f5;
+}
+
+.loan-section .suggestion-item.active {
+    background-color: #e8f0fe;
+    font-weight: 500;
+}
+
+.loan-section .dropdown {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 150px;
+}
+
+.loan-section .search-btn {
+    background-color: red;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.loan-section .search-btn:hover {
+    background-color: #5a6268;
+}
+
+/* Transaction and Books Tables */
+.loan-section .transaction-table,
+.loan-section .books-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+}
+
+.loan-section .transaction-table th,
+.loan-section .books-table th {
+    background-color: #ccc;
+    padding: 10px 15px;
+    font-weight: bold;
+    text-align: left;
+    border: 1px solid #ddd;
+}
+
+.loan-section .transaction-table td,
+.loan-section .books-table td {
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    background-color: white;
+}
+
+.loan-section .transaction-table tr:nth-child(even) td,
+.loan-section .books-table tr:nth-child(even) td {
+    background-color: #f9f9f9;
+}
+
+/* Action Buttons in Tables */
+.loan-section .view-btn,
+.loan-section .delete-btn,
+.loan-section .return-btn {
+    display: inline-block;
+    margin-right: 5px;
+    padding: 5px 10px;
+    color: white;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+.loan-section .view-btn {
+    background-color: #007bff;
+}
+
+.loan-section .delete-btn {
+    background-color: red;
+}
+
+.loan-section .return-btn {
+    background-color: #28a745;
+}
+
+.loan-section .view-btn:hover,
+.loan-section .delete-btn:hover,
+.loan-section .return-btn:hover {
+    background-color: #5a6268;
+}
+
+.loan-section .view-btn i,
+.loan-section .delete-btn i,
+.loan-section .return-btn i {
+    margin-right: 5px;
+}
+
+/* Status Badges */
+.loan-section .status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+.loan-section .status-normal {
+    background-color: #28a745;
+    color: white;
+}
+
+.loan-section .status-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.loan-section .status-overdue {
+    background-color: red;
+    color: white;
+}
+
+/* No data message */
+.loan-section .no-data {
+    text-align: center;
+    padding: 20px;
+    color: #6c757d;
+    font-style: italic;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+/* Borrower Details Section */
+.loan-section .borrower-details {
+    margin-bottom: 20px;
+}
+
+.loan-section .borrower-details h3 {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 20px 0 10px;
+}
+
+.loan-section .borrower-info {
+    background-color: white;
+    border: 1px solid #ccc;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* Info spacing */
+.loan-section .gap {
+    display: inline-block;
+    width: 50px;
+}
+
+/* Button group */
+.loan-section .button-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.loan-section .cancel-btn {
+    padding: 10px 20px;
+    font-weight: bold;
+    border-radius: 5px;
+    border: none;
+    color: white;
+    background-color: #888;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.loan-section .cancel-btn:hover {
+    background-color: #5a6268;
+}
+
+/* Responsive Table */
+.loan-section .table-responsive {
+    overflow-x: auto;
+    margin-bottom: 20px;
+}
+
+/* Responsive (Optional) */
+@media screen and (max-width: 768px) {
+    .loan-section .search-form {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .loan-section .button-group {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .loan-section .search-input {
+        width: 100%;
+    }
+    
+    .loan-section .view-btn,
+    .loan-section .delete-btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 5px;
+        text-align: center;
+    }
+}
