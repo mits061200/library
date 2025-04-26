@@ -2,6 +2,13 @@
 // Start session at the very beginning of the script
 session_start();
 
+// Check if this is a fresh page load (not a form submission)
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    // Clear borrower and selected books data from session
+    unset($_SESSION['borrower_data']);
+    unset($_SESSION['selected_books']);
+}
+
 include 'header.php';
 ?>
 <link rel="stylesheet" href="css/loan.css">
@@ -25,6 +32,7 @@ $selected_category = 'All Categories';
 $selected_location = 'All Location';
 $error_message = '';
 $success_message = '';
+$total_borrowed = 0;
 
 // Get selected books from session if available
 if(isset($_SESSION['selected_books'])) {
@@ -161,25 +169,45 @@ if (isset($_POST['add_book']) && !empty($book_data) && count($selected_books) < 
             break;
         }
     }
-    
-    // Check if borrower already has this book on loan
-    $already_borrowed = false;
-    if (!empty($borrower_data)) {
-        $check_loan_sql = "SELECT * FROM loan 
-                          WHERE BorrowerID = '{$borrower_data['BorrowerID']}' 
-                          AND BookID = '{$book_data['BookID']}' 
-                          AND Status = 'borrowed'";
-        $check_loan_result = $conn->query($check_loan_sql);
-        if ($check_loan_result && $check_loan_result->num_rows > 0) {
-            $already_borrowed = true;
-        }
+
+// Check if borrower already has this book on loan or would exceed maximum
+$already_borrowed = false;
+$max_loans_reached = false;
+
+if (!empty($borrower_data)) {
+    // First check if this specific book is already borrowed
+    $check_loan_sql = "SELECT * FROM loan 
+                      WHERE BorrowerID = '{$borrower_data['BorrowerID']}' 
+                      AND BookID = '{$book_data['BookID']}' 
+                      AND Status = 'borrowed'";
+    $check_loan_result = $conn->query($check_loan_sql);
+    if ($check_loan_result && $check_loan_result->num_rows > 0) {
+        $already_borrowed = true;
     }
     
-    if ($book_exists) {
-        $error_message = "This book is already in your selection.";
-    } else if ($already_borrowed) {
-        $error_message = "The borrower already has this book on loan.";
-    } else {
+    // Then check total number of books currently borrowed
+    $total_loans_sql = "SELECT COUNT(*) as total_loans FROM loan 
+                        WHERE BorrowerID = '{$borrower_data['BorrowerID']}' 
+                        AND Status = 'borrowed'";
+    $total_loans_result = $conn->query($total_loans_sql);
+    if ($total_loans_result && $total_loans_result->num_rows > 0) {
+        $total_borrowed = $total_loans_result->fetch_assoc()['total_loans'];
+        // Add selected books to the count
+        $total_books = $total_borrowed + count($selected_books);
+        if ($total_books >= 3) {
+            $max_loans_reached = true;
+        }
+    }
+}
+    
+        if ($book_exists) {
+            $error_message = "This book is already in your selection.";
+        } else if ($already_borrowed) {
+            $error_message = "The borrower already has this book on loan.";
+        } else if ($max_loans_reached) {
+            $error_message = "The borrower cannot borrow more than 3 books total.";
+        } else {
+           
         // Add current date and due date to book data
         $book_data['date_loan'] = date('Y-m-d');
         $book_data['due_date'] = date('Y-m-d', strtotime('+3 days'));
@@ -187,7 +215,7 @@ if (isset($_POST['add_book']) && !empty($book_data) && count($selected_books) < 
         // Add book to selected books
         $selected_books[] = $book_data;
         $_SESSION['selected_books'] = $selected_books;
-        $success_message = "Book added to selection. " . (3 - count($selected_books)) . " more book(s) can be selected.";
+        $success_message = "Book added to selection. " . max(0, 3 - $total_borrowed - count($selected_books)) . " more book(s) can be selected.";
     }
     
     // Clear book data to allow new search
@@ -262,19 +290,6 @@ $default_due_date = date('Y-m-d', strtotime('+3 days'));
     <div class="loan-section">
         <div class="classification-container">
             <h2>Loan</h2>
-
-            <?php if (!empty($error_message)): ?>
-                <div class="alert alert-danger">
-                    <?php echo $error_message; ?>
-                </div>
-            <?php endif; ?>
-            
-            <?php if (!empty($success_message)): ?>
-                <div class="alert alert-success">
-                    <?php echo $success_message; ?>
-                </div>
-            <?php endif; ?>
-
             <!-- Header Tabs -->
             <div class="tab-buttons">
                 <button class="tab-btn active">Loan</button>
@@ -322,6 +337,82 @@ $default_due_date = date('Y-m-d', strtotime('+3 days'));
                     <p><strong>Last Name:</strong></p>
                 <?php endif; ?>
             </div>
+
+            <!-- Currently Borrowed Books Section -->
+            <?php if (!empty($borrower_data)): 
+                // Query to fetch currently borrowed books
+                $borrowed_sql = "SELECT b.*, l.DateBorrowed, l.DueDate, 
+                                a.FirstName AS AuthorFirstName, a.MiddleName AS AuthorMiddleName, 
+                                a.LastName AS AuthorLastName
+                                FROM loan l
+                                JOIN book b ON l.BookID = b.BookID
+                                LEFT JOIN authors a ON b.AuthorID = a.AuthorID
+                                WHERE l.BorrowerID = '{$borrower_data['BorrowerID']}' 
+                                AND l.Status = 'borrowed'";
+                $borrowed_result = $conn->query($borrowed_sql);
+                $total_borrowed = 0;
+                
+                if ($borrowed_result && $borrowed_result->num_rows > 0):
+                    $total_borrowed = $borrowed_result->num_rows;
+                    $currently_borrowed_books = $borrowed_result->fetch_all(MYSQLI_ASSOC);
+            ?>
+            <div class="currently-borrowed-section">
+                <h3 class="section-title">Currently Borrowed Books (<?php echo $total_borrowed; ?>/3)</h3>
+                <div class="borrowed-books-list">
+                    <table class="selected-books-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Date Borrowed</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($currently_borrowed_books as $index => $book): ?>
+                            <tr>
+                                <td><?php echo $index + 1; ?></td>
+                                <td><?php echo $book['Title']; ?></td>
+                                <td>
+                                    <?php 
+                                        $author = $book['AuthorFirstName'];
+                                        if (!empty($book['AuthorMiddleName'])) {
+                                            $author .= ' ' . $book['AuthorMiddleName'];
+                                        }
+                                        $author .= ' ' . $book['AuthorLastName'];
+                                        echo $author;
+                                    ?>
+                                </td>
+                                <td><?php echo $book['DateBorrowed']; ?></td>
+                                <td><?php echo $book['DueDate']; ?></td>
+                                <td>
+                                    <?php 
+                                        $today = new DateTime();
+                                        $due = new DateTime($book['DueDate']);
+                                        if ($today > $due) {
+                                            echo '<span style="color:red">Overdue</span>';
+                                        } else {
+                                            echo 'Active';
+                                        }
+                                    ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="alert alert-info">
+                    <strong>Note:</strong> This borrower can borrow <?php echo max(0, 3 - $total_borrowed - count($selected_books)); ?> more book(s).
+                </div>
+            </div>
+            <?php 
+                endif;
+            endif; 
+            ?>
+
+
 
             <!-- Selected Books Section -->
             <?php if (!empty($selected_books)): ?>
@@ -388,8 +479,8 @@ $default_due_date = date('Y-m-d', strtotime('+3 days'));
             </div>
             <?php endif; ?>
 
-            <!-- Book Search (Only show if less than 3 books selected) -->
-            <?php if (count($selected_books) < 3): ?>
+            <!-- Book Search (Only show if less than 3 books total between borrowed and selected) -->
+            <?php if ($total_borrowed + count($selected_books) < 3): ?>
             <h3 class="section-title">Book Information</h3>
             <form class="search-form" method="POST" action="">
                 <!-- Add hidden field to preserve borrower ID -->
@@ -469,6 +560,18 @@ $default_due_date = date('Y-m-d', strtotime('+3 days'));
             </div>
             <?php endif; ?>
 
+            <?php if (!empty($error_message)): ?>
+                <div class="alert alert-danger">
+                    <?php echo $error_message; ?>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($success_message)): ?>
+                <div class="alert alert-success">
+                    <?php echo $success_message; ?>
+                </div>
+            <?php endif; ?>
+
             <!-- Action Buttons -->
             <form id="loan_form" method="POST" action="">
                 <!-- Add hidden field for personnel ID -->
@@ -485,10 +588,11 @@ $default_due_date = date('Y-m-d', strtotime('+3 days'));
                     <button type="submit" name="submit_loan" class="add-btn" <?php echo (empty($borrower_data) || empty($selected_books) || !$valid_personnel_id) ? 'disabled' : ''; ?>>
                         Loan <?php echo count($selected_books); ?> Book<?php echo count($selected_books) != 1 ? 's' : ''; ?>
                     </button>
-                    <a href="loan.php" class="cancel-btn">Cancel</a>
+                    <a href="loan.php?clear=1" class="cancel-btn">Cancel</a>
                 </div>
             </form>
         </div>
+        
     </div>
 </main>
 
