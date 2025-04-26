@@ -162,17 +162,32 @@ if (isset($_POST['add_book']) && !empty($book_data) && count($selected_books) < 
         }
     }
     
-    if (!$book_exists) {
+    // Check if borrower already has this book on loan
+    $already_borrowed = false;
+    if (!empty($borrower_data)) {
+        $check_loan_sql = "SELECT * FROM loan 
+                          WHERE BorrowerID = '{$borrower_data['BorrowerID']}' 
+                          AND BookID = '{$book_data['BookID']}' 
+                          AND Status = 'borrowed'";
+        $check_loan_result = $conn->query($check_loan_sql);
+        if ($check_loan_result && $check_loan_result->num_rows > 0) {
+            $already_borrowed = true;
+        }
+    }
+    
+    if ($book_exists) {
+        $error_message = "This book is already in your selection.";
+    } else if ($already_borrowed) {
+        $error_message = "The borrower already has this book on loan.";
+    } else {
         // Add current date and due date to book data
         $book_data['date_loan'] = date('Y-m-d');
-        $book_data['due_date'] = date('Y-m-d', strtotime('+7 days'));
+        $book_data['due_date'] = date('Y-m-d', strtotime('+3 days'));
         
         // Add book to selected books
         $selected_books[] = $book_data;
         $_SESSION['selected_books'] = $selected_books;
         $success_message = "Book added to selection. " . (3 - count($selected_books)) . " more book(s) can be selected.";
-    } else {
-        $error_message = "This book is already in your selection.";
     }
     
     // Clear book data to allow new search
@@ -238,9 +253,9 @@ if (isset($_POST['submit_loan']) && !empty($selected_books) && !empty($borrower_
     }
 }
 
-// Get today's date and default due date (7 days from now)
+// Get today's date and default due date (3 days from now)
 $today = date('Y-m-d');
-$default_due_date = date('Y-m-d', strtotime('+7 days'));
+$default_due_date = date('Y-m-d', strtotime('+3 days'));
 ?>
 
 <main class="content">
@@ -316,7 +331,7 @@ $default_due_date = date('Y-m-d', strtotime('+7 days'));
                     <table class="selected-books-table">
                         <thead>
                             <tr>
-                                <th>#</th>
+                                <th>ID</th>
                                 <th>Title</th>
                                 <th>Author</th>
                                 <th>ISBN</th>
@@ -650,7 +665,7 @@ document.addEventListener('DOMContentLoaded', function() {
         dateLoanInput.addEventListener('change', function() {
             if (this.value) {
                 const loanDate = new Date(this.value);
-                loanDate.setDate(loanDate.getDate() + 7);
+                loanDate.setDate(loanDate.getDate() + 3);
                 dueDateInput.value = loanDate.toISOString().split('T')[0];
                 dueDateInput.setAttribute('min', this.value);
             }
