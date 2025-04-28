@@ -1,6 +1,16 @@
 <?php
+ob_start();
 // Start session at the very beginning of the script
 session_start();
+
+// Database connection
+$conn = new mysqli("localhost", "root", "", "library");
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+include 'header.php';
+include 'navbar.php';
 
 // Check if this is a fresh page load (not a form submission)
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -9,18 +19,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     unset($_SESSION['selected_books']);
 }
 
-include 'header.php';
 ?>
 <link rel="stylesheet" href="css/loan.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 <?php
-include 'navbar.php';
-
-// Database connection
-$conn = new mysqli("localhost", "root", "", "library");
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
 
 // Initialize variables
 $borrower_data = [];
@@ -47,6 +49,15 @@ if ($personnel_result && $personnel_result->num_rows > 0) {
     $personnel_row = $personnel_result->fetch_assoc();
     $valid_personnel_id = $personnel_row['PersonnelID'];
 }
+
+// Get loan duration from penalty table
+$loan_duration = 3; // Default fallback
+$duration_query = "SELECT Duration FROM penalty WHERE PenaltyName = 'Overdue' LIMIT 1";
+$duration_result = $conn->query($duration_query);
+if ($duration_result && $duration_result->num_rows > 0) {
+    $loan_duration = $duration_result->fetch_assoc()['Duration'];
+}
+
 
 // Handle borrower search
 if (isset($_POST['search_borrower']) || isset($_POST['borrower_id'])) {
@@ -80,6 +91,32 @@ if (isset($_POST['search_borrower']) || isset($_POST['borrower_id'])) {
 } else if (isset($_SESSION['borrower_data'])) {
     // Restore borrower data from session
     $borrower_data = $_SESSION['borrower_data'];
+}
+
+
+// Handle updating book dates
+if (isset($_POST['update_date_index']) && isset($_POST['update_date_type']) && isset($_POST['update_date_value'])) {
+    $index = intval($_POST['update_date_index']);
+    $type = $_POST['update_date_type'];
+    $value = $_POST['update_date_value'];
+    
+    if (isset($_SESSION['selected_books'][$index])) {
+        $_SESSION['selected_books'][$index][$type] = $value;
+        
+        if ($type === 'date_loan') {
+            $loan_date = new DateTime($value);
+            $due_date = new DateTime($_SESSION['selected_books'][$index]['due_date']);
+            
+            if ($due_date < $loan_date) {
+                $loan_date->modify("+$loan_duration days");
+                $_SESSION['selected_books'][$index]['due_date'] = $loan_date->format('Y-m-d');
+            }
+        }
+        
+        $success_message = "Date updated successfully.";
+    }
+    
+    $selected_books = $_SESSION['selected_books'];
 }
 
 // Get categories for dropdown
@@ -161,7 +198,6 @@ if (isset($_POST['search_book']) || isset($_POST['book_id'])) {
 
 // Handle adding a book to selection
 if (isset($_POST['add_book']) && !empty($book_data) && count($selected_books) < 3) {
-    // Check if book is already selected
     $book_exists = false;
     foreach ($selected_books as $book) {
         if ($book['BookID'] == $book_data['BookID']) {
@@ -170,55 +206,40 @@ if (isset($_POST['add_book']) && !empty($book_data) && count($selected_books) < 
         }
     }
 
-// Check if borrower already has this book on loan or would exceed maximum
-$already_borrowed = false;
-$max_loans_reached = false;
+    $already_borrowed = false;
+    $max_loans_reached = false;
 
-if (!empty($borrower_data)) {
-    // First check if this specific book is already borrowed
-    $check_loan_sql = "SELECT * FROM loan 
-                      WHERE BorrowerID = '{$borrower_data['BorrowerID']}' 
-                      AND BookID = '{$book_data['BookID']}' 
-                      AND Status = 'borrowed'";
-    $check_loan_result = $conn->query($check_loan_sql);
-    if ($check_loan_result && $check_loan_result->num_rows > 0) {
-        $already_borrowed = true;
-    }
-    
-    // Then check total number of books currently borrowed
-    $total_loans_sql = "SELECT COUNT(*) as total_loans FROM loan 
-                        WHERE BorrowerID = '{$borrower_data['BorrowerID']}' 
-                        AND Status = 'borrowed'";
-    $total_loans_result = $conn->query($total_loans_sql);
-    if ($total_loans_result && $total_loans_result->num_rows > 0) {
-        $total_borrowed = $total_loans_result->fetch_assoc()['total_loans'];
-        // Add selected books to the count
-        $total_books = $total_borrowed + count($selected_books);
-        if ($total_books >= 3) {
-            $max_loans_reached = true;
+    if (!empty($borrower_data)) {
+        $check_loan_sql = "SELECT * FROM loan 
+                          WHERE BorrowerID = '{$borrower_data['BorrowerID']}' 
+                          AND BookID = '{$book_data['BookID']}' 
+                          AND Status = 'borrowed'";
+        $check_loan_result = $conn->query($check_loan_sql);
+        if ($check_loan_result && $check_loan_result->num_rows > 0) {
+            $already_borrowed = true;
+        }
+        
+        $total_loans_sql = "SELECT COUNT(*) as total_loans FROM loan 
+                            WHERE BorrowerID = '{$borrower_data['BorrowerID']}' 
+                            AND Status = 'borrowed'";
+        $total_loans_result = $conn->query($total_loans_sql);
+        if ($total_loans_result && $total_loans_result->num_rows > 0) {
+            $total_borrowed = $total_loans_result->fetch_assoc()['total_loans'];
+            if ($total_borrowed + count($selected_books) >= 3) {
+                $max_loans_reached = true;
+            }
         }
     }
-}
     
-        if ($book_exists) {
-            $error_message = "This book is already in your selection.";
-        } else if ($already_borrowed) {
-            $error_message = "The borrower already has this book on loan.";
-        } else if ($max_loans_reached) {
-            $error_message = "The borrower cannot borrow more than 3 books total.";
-        } else {
-           
-        // Add current date and due date to book data
+    if (!$book_exists && !$already_borrowed && !$max_loans_reached) {
         $book_data['date_loan'] = date('Y-m-d');
-        $book_data['due_date'] = date('Y-m-d', strtotime('+3 days'));
+        $book_data['due_date'] = date('Y-m-d', strtotime("+$loan_duration days"));
         
-        // Add book to selected books
         $selected_books[] = $book_data;
         $_SESSION['selected_books'] = $selected_books;
-        $success_message = "Book added to selection. " . max(0, 3 - $total_borrowed - count($selected_books)) . " more book(s) can be selected.";
+        $success_message = "Book added. " . max(0, 3 - $total_borrowed - count($selected_books)) . " more book(s) can be selected.";
     }
     
-    // Clear book data to allow new search
     $book_data = [];
 }
 
@@ -232,18 +253,11 @@ if (isset($_POST['remove_book']) && isset($_POST['remove_index'])) {
     }
 }
 
-// Process loan submission for multiple books
+// Process loan submission
 if (isset($_POST['submit_loan']) && !empty($selected_books) && !empty($borrower_data)) {
-    // Validate required fields
     if ($valid_personnel_id === null) {
-        $error_message = "No valid personnel found in the system. Please add personnel before creating loans.";
+        $error_message = "No valid personnel found in the system.";
     } else {
-        $borrower_id = $borrower_data['BorrowerID'];
-        $personnel_id = $valid_personnel_id;
-        $loan_success = true;
-        $loan_errors = [];
-        
-        // Start transaction
         $conn->begin_transaction();
         
         try {
@@ -252,25 +266,21 @@ if (isset($_POST['submit_loan']) && !empty($selected_books) && !empty($borrower_
                 $date_loan = $conn->real_escape_string($book['date_loan']);
                 $due_date = $conn->real_escape_string($book['due_date']);
                 
-                // Insert into loan table
                 $sql = "INSERT INTO loan (BorrowerID, BookID, DateBorrowed, DueDate, PersonnelID, Status) 
-                       VALUES ('$borrower_id', '$book_id', '$date_loan', '$due_date', '$personnel_id', 'borrowed')";
+                       VALUES ('{$borrower_data['BorrowerID']}', '$book_id', '$date_loan', '$due_date', '$valid_personnel_id', 'borrowed')";
                 
                 if (!$conn->query($sql)) {
-                    throw new Exception("Error recording loan for book ID $book_id: " . $conn->error);
+                    throw new Exception("Error recording loan: " . $conn->error);
                 }
                 
-                // Update book status to 'On Loan'
                 $sql = "UPDATE book SET Status = 'On Loan' WHERE BookID = '$book_id'";
                 if (!$conn->query($sql)) {
-                    throw new Exception("Error updating status for book ID $book_id: " . $conn->error);
+                    throw new Exception("Error updating book status: " . $conn->error);
                 }
             }
             
             $conn->commit();
             $success_message = count($selected_books) . " book(s) loaned successfully!";
-            
-            // Clear session data after successful loan
             $selected_books = [];
             $_SESSION['selected_books'] = [];
             
@@ -315,16 +325,16 @@ $default_due_date = date('Y-m-d', strtotime('+3 days'));
                     <p><strong>First Name:</strong> <?php echo $borrower_data['FirstName']; ?> <span class="gap"></span> <strong>Contact Number:</strong> <?php echo $borrower_data['ContactNumber']; ?></p>
                     <p><strong>Middle Name:</strong> <?php echo $borrower_data['MiddleName']; ?> <span class="gap"></span> <strong>Latest Penalty:</strong> 
                     <?php 
-                        $penalty_query = "SELECT SUM(p.PenaltyAmount) as TotalPenalty 
-                                        FROM loan bl 
-                                        JOIN penalty p ON bl.PenaltyID = p.PenaltyID 
-                                        WHERE bl.BorrowerID = '{$borrower_data['BorrowerID']}' 
-                                        AND bl.Status = 'penalized'";
+                        $penalty_query = "SELECT SUM(pt.PenaltyAmount) as TotalPenalty 
+                        FROM loan bl 
+                        JOIN PenaltyTransaction pt ON bl.TransactionID = pt.LoanID 
+                        WHERE bl.BorrowerID = '{$borrower_data['BorrowerID']}' 
+                        AND bl.Status = 'penalized'";
                         $penalty_result = $conn->query($penalty_query);
                         $penalty_amount = 0;
                         if ($penalty_result && $penalty_result->num_rows > 0) {
                             $penalty_row = $penalty_result->fetch_assoc();
-                            $penalty_amount = $penalty_row['TotalPenalty'];
+                            $penalty_amount = $penalty_row['TotalPenalty'] ?: 0;
                         }
                         echo number_format($penalty_amount, 2);
                     ?>
@@ -337,6 +347,7 @@ $default_due_date = date('Y-m-d', strtotime('+3 days'));
                     <p><strong>Last Name:</strong></p>
                 <?php endif; ?>
             </div>
+
 
             <!-- Currently Borrowed Books Section -->
             <?php if (!empty($borrower_data)): 
@@ -388,15 +399,15 @@ $default_due_date = date('Y-m-d', strtotime('+3 days'));
                                 <td><?php echo $book['DateBorrowed']; ?></td>
                                 <td><?php echo $book['DueDate']; ?></td>
                                 <td>
-                                    <?php 
-                                        $today = new DateTime();
-                                        $due = new DateTime($book['DueDate']);
-                                        if ($today > $due) {
-                                            echo '<span style="color:red">Overdue</span>';
-                                        } else {
-                                            echo 'Active';
-                                        }
-                                    ?>
+                                <?php 
+                                    $today_date = date('Y-m-d');
+                                    $due_date = $book['DueDate'];
+                                    if ($today_date > $due_date) {
+                                        echo '<span style="color:red">Overdue</span>';
+                                    } else {
+                                        echo 'Active';
+                                    }
+                                ?>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -775,6 +786,49 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Add this function to your existing JavaScript section
+function updateBookDate(index, type, value) {
+    // Create a form to update the book dates
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.style.display = 'none';
+    
+    // Add hidden inputs
+    const indexInput = document.createElement('input');
+    indexInput.type = 'hidden';
+    indexInput.name = 'update_date_index';
+    indexInput.value = index;
+    form.appendChild(indexInput);
+    
+    const typeInput = document.createElement('input');
+    typeInput.type = 'hidden';
+    typeInput.name = 'update_date_type';
+    typeInput.value = type;
+    form.appendChild(typeInput);
+    
+    const valueInput = document.createElement('input');
+    valueInput.type = 'hidden';
+    valueInput.name = 'update_date_value';
+    valueInput.value = value;
+    form.appendChild(valueInput);
+    
+    // Preserve other form values
+    const borrowerIdField = document.querySelector('input[name="borrower_id"]');
+    if (borrowerIdField) {
+        const borrowerIdInput = document.createElement('input');
+        borrowerIdInput.type = 'hidden';
+        borrowerIdInput.name = 'borrower_id';
+        borrowerIdInput.value = borrowerIdField.value;
+        form.appendChild(borrowerIdInput);
+    }
+    
+    // Submit the form
+    document.body.appendChild(form);
+    form.submit();
+}
+
+
 });
 </script>
 

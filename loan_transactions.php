@@ -246,7 +246,7 @@ if (!empty($view_borrower_id)) {
                             <p><strong>First Name:</strong> <?php echo $borrower_details['FirstName']; ?> <span class="gap"></span> <strong>Contact Number:</strong> <?php echo $borrower_details['ContactNumber']; ?></p>
                             <p><strong>Middle Name:</strong> <?php echo $borrower_details['MiddleName']; ?> <span class="gap"></span> <strong>Latest Penalty:</strong> 
                             <?php 
-                                $penalty_query = "SELECT SUM(p.PenaltyAmount) as TotalPenalty 
+                                $penalty_query = "SELECT SUM(p.PenaltyRate) as TotalPenalty 
                                                 FROM loan bl 
                                                 JOIN penalty p ON bl.PenaltyID = p.PenaltyID 
                                                 WHERE bl.BorrowerID = '{$borrower_details['BorrowerID']}' 
