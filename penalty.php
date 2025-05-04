@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['add_penalty'])) {
     $amount = trim($_POST['penalty_amount']) !== '' ? (float)$_POST['penalty_amount'] : null;
     $duration = trim($_POST['penalty_duration']) !== '' ? trim($_POST['penalty_duration']) : null;
 
-    $stmt = $conn->prepare("INSERT INTO penalty (PenaltyName, PenaltyAmount, Duration) VALUES (?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO penalty (PenaltyName, PenaltyRate, Duration) VALUES (?, ?, ?)");
     $stmt->bind_param("sds", $name, $amount, $duration);
     $stmt->execute();
     echo "<script>alert('Penalty added successfully');</script>";
@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['update_penalty'])) {
     $amount = trim($_POST['penalty_amount']) !== '' ? (float)$_POST['penalty_amount'] : null;
     $duration = trim($_POST['penalty_duration']) !== '' ? trim($_POST['penalty_duration']) : null;
 
-    $stmt = $conn->prepare("UPDATE penalty SET PenaltyName = ?, PenaltyAmount = ?, Duration = ? WHERE PenaltyID = ?");
+    $stmt = $conn->prepare("UPDATE penalty SET PenaltyName = ?, PenaltyRate = ?, Duration = ? WHERE PenaltyID = ?");
     $stmt->bind_param("sdsi", $name, $amount, $duration, $id);
     if ($stmt->execute()) {
         echo "<script>alert('Penalty updated successfully'); window.location='penalty.php';</script>";
@@ -134,7 +134,7 @@ $result = $stmt->get_result();
                 <label>Penalty Amount:</label>
                 <input type="number" step="0.01" name="penalty_amount" class="last-name-input" 
                        placeholder="Enter Amount (Optional)" 
-                       value="<?= $edit_mode ? htmlspecialchars($edit_penalty['PenaltyAmount']) : '' ?>">
+                       value="<?= $edit_mode ? htmlspecialchars($edit_penalty['PenaltyRate']) : '' ?>">
 
                 <label>Duration (e.g., 7 days):</label>
                 <input type="text" name="penalty_duration" class="last-name-input" 
@@ -179,7 +179,7 @@ $result = $stmt->get_result();
                             echo "<tr>";
                             echo "<td>" . $row['PenaltyID'] . "</td>"; 
                             echo "<td>" . htmlspecialchars($row['PenaltyName']) . "</td>";
-                            echo "<td>" . ($row['PenaltyAmount'] !== null ? htmlspecialchars($row['PenaltyAmount']) : '—') . "</td>";
+                            echo "<td>" . ($row['PenaltyRate'] !== null ? htmlspecialchars($row['PenaltyRate']) : '—') . "</td>";
                             echo "<td>" . ($row['Duration'] !== null ? htmlspecialchars($row['Duration']) : '—') . "</td>";
                             echo "<td>
                                     <a href='penalty.php?edit=" . $row['PenaltyID'] . "' class='edit'><i class='fas fa-edit'></i> Edit</a>
