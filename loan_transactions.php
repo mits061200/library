@@ -31,13 +31,13 @@ if ($personnel_result && $personnel_result->num_rows > 0) {
 }
 
 // Handle adding a book to return list
-if (isset($_POST['add_book_return']) && isset($_POST['loan_id'])) {
-    $loan_id = $conn->real_escape_string($_POST['loan_id']);
+if (isset($_POST['add_book_return']) && isset($_POST['transaction_id'])) {
+    $transaction_id = $conn->real_escape_string($_POST['transaction_id']);
     
     // Check if book is already in return list
     $book_exists = false;
     foreach ($selected_returns as $book) {
-        if ($book['TransactionID'] == $loan_id) {
+        if ($book['TransactionID'] == $transaction_id) {
             $book_exists = true;
             break;
         }
@@ -46,54 +46,71 @@ if (isset($_POST['add_book_return']) && isset($_POST['loan_id'])) {
     if ($book_exists) {
         $error_message = "This book is already in your return list.";
     } else {
-        // Fetch loan details including book category
-        $loan_query = "SELECT l.*, b.Title, b.ISBN, b.AccessionNumber, b.Price, b.CategoryID,
-                      a.FirstName AS AuthorFirstName, a.MiddleName AS AuthorMiddleName, 
-                      a.LastName AS AuthorLastName, c.CategoryName
-                      FROM loan l
-                      JOIN book b ON l.BookID = b.BookID
-                      LEFT JOIN authors a ON b.AuthorID = a.AuthorID
-                      LEFT JOIN category c ON b.CategoryID = c.CategoryID
-                      WHERE l.TransactionID = '$loan_id'";
+        // Fetch loan details
+        $loan_query = "SELECT l.TransactionID, l.BookID, l.DateBorrowed, l.DueDate, l.Status,
+        b.Title, b.ISBN, b.AccessionNumber, b.CategoryID, c.CategoryName,
+        a.FirstName AS AuthorFirstName, a.MiddleName AS AuthorMiddleName, a.LastName AS AuthorLastName
+        FROM loan l
+        JOIN book b ON l.BookID = b.BookID
+        LEFT JOIN authors a ON b.AuthorID = a.AuthorID
+        LEFT JOIN category c ON b.CategoryID = c.CategoryID
+        WHERE l.TransactionID = '$transaction_id'";
         $loan_result = $conn->query($loan_query);
-        
+
         if ($loan_result && $loan_result->num_rows > 0) {
             $loan_data = $loan_result->fetch_assoc();
-            
-            // Get the appropriate penalty rate from the penalty table based on book category
-            $penalty_query = "SELECT PenaltyRate FROM penalty WHERE ";
-            
-            // If it's a fiction book (CategoryID = 1), use fiction penalty
-            if ($loan_data['CategoryID'] == 1) {
-                $penalty_query .= "PenaltyName = 'Overdue (Fiction)' LIMIT 1";
-            } else {
-                $penalty_query .= "PenaltyName = 'Overdue' LIMIT 1";
-            }
-            
-            $penalty_result = $conn->query($penalty_query);
-            $penalty_rate = 10.00; // Default fallback
-            
-            if ($penalty_result && $penalty_result->num_rows > 0) {
-                $penalty_row = $penalty_result->fetch_assoc();
-                $penalty_rate = floatval($penalty_row['PenaltyRate']);
-            }
-            
-            // Calculate days overdue and potential penalty
+        
+            // Calculate days overdue and penalty
             $due_date = new DateTime($loan_data['DueDate']);
             $today = new DateTime();
             $days_overdue = ($today > $due_date) ? $today->diff($due_date)->days : 0;
-            $penalty_amount = $days_overdue * $penalty_rate;
-            
-            // Add return date and penalty to loan data
-            $loan_data['return_date'] = date('Y-m-d');
-            $loan_data['days_overdue'] = $days_overdue;
-            $loan_data['penalty_amount'] = $penalty_amount;
-            $loan_data['penalty_rate'] = $penalty_rate;
-            
-            // Add to return list
-            $selected_returns[] = $loan_data;
-            $_SESSION['selected_returns'] = $selected_returns;
-            $success_message = "Book added to return list.";
+        
+            $penalty_amount = 0;
+            if ($days_overdue > 0) {
+                // Fetch penalty rate and duration
+                $penalty_query = "SELECT PenaltyID, PenaltyRate, Duration FROM penalty WHERE ";
+                $penalty_query .= ($loan_data['CategoryID'] == 1) ? "PenaltyName = 'Overdue (Fiction)'" : "PenaltyName = 'Overdue'";
+                $penalty_query .= " LIMIT 1";
+        
+                $penalty_result = $conn->query($penalty_query);
+                if ($penalty_result && $penalty_result->num_rows > 0) {
+                    $penalty_data = $penalty_result->fetch_assoc();
+                    $penalty_rate = floatval($penalty_data['PenaltyRate']);
+                    $grace_period = intval($penalty_data['Duration']);
+        
+                    // Apply penalty only after the grace period
+                    if ($days_overdue > $grace_period) {
+                        $effective_days = $days_overdue - $grace_period;
+                        $penalty_amount = $effective_days * $penalty_rate;
+                    }
+                }
+            }
+        
+            // Determine the status of the book
+            if ($book['days_overdue'] > 0) {
+                // Handle overdue penalties
+                $penalty_amount = $book['penalty_amount'];
+                $penalty_sql = "INSERT INTO penaltytransaction (LoanID, PenaltyID, PenaltyAmount, PenaltyType, DateIssued, Remarks, Status) 
+                                VALUES ('$loan_id', 1, '$penalty_amount', 'overdue', '$return_date', 'Days Overdue: {$book['days_overdue']}', 'unpaid')";
+                if (!$conn->query($penalty_sql)) {
+                    throw new Exception("Error recording penalty: " . $conn->error);
+                }
+            }
+        
+            // Add penalty and return date to loan data
+$loan_data['return_date'] = date('Y-m-d');
+$loan_data['days_overdue'] = $days_overdue;
+$loan_data['penalty_amount'] = $penalty_amount;
+$loan_data['Title'] = isset($loan_data['Title']) ? $loan_data['Title'] : 'Unknown Title';
+$loan_data['AuthorFirstName'] = isset($loan_data['AuthorFirstName']) ? $loan_data['AuthorFirstName'] : '';
+$loan_data['AuthorMiddleName'] = isset($loan_data['AuthorMiddleName']) ? $loan_data['AuthorMiddleName'] : '';
+$loan_data['AuthorLastName'] = isset($loan_data['AuthorLastName']) ? $loan_data['AuthorLastName'] : '';
+$loan_data['CategoryName'] = isset($loan_data['CategoryName']) ? $loan_data['CategoryName'] : 'Unknown Category';
+
+// Add to return list
+$selected_returns[] = $loan_data;
+$_SESSION['selected_returns'] = $selected_returns;
+$success_message = "Book added to return list.";
         } else {
             $error_message = "Could not find loan information.";
         }
@@ -111,81 +128,75 @@ if (isset($_POST['remove_book']) && isset($_POST['remove_index'])) {
 }
 
 // Process returns
-if (isset($_POST['submit_returns']) && !empty($selected_returns)) {
-    // Validate required fields
-    if ($valid_personnel_id === null) {
-        $error_message = "No valid personnel found in the system. Please add personnel before processing returns.";
-    } else {
-        $borrower_id = $selected_returns[0]['BorrowerID']; // Get borrower ID from first book
-        $personnel_id = $valid_personnel_id;
-        $return_success = true;
-        $return_errors = [];
-        
-        // Start transaction
-        $conn->begin_transaction();
-        
-        try {
-            foreach ($selected_returns as $book) {
-                $loan_id = $book['TransactionID'];
-                $return_date = $conn->real_escape_string($book['return_date']);
-                $book_id = $book['BookID'];
-                
-                // Handle overdue penalties if needed
-                if ($book['days_overdue'] > 0) {
-                    // Insert into penalty transaction table
-                    $penalty_amount = $book['penalty_amount'];
-                    $penalty_sql = "INSERT INTO penaltytransaction (LoanID, PenaltyID, PenaltyAmount, PenaltyType, DateIssued, Remarks, Status) 
-                                  VALUES ('$loan_id', 1, '$penalty_amount', 'overdue', '$return_date', 'Days Overdue: {$book['days_overdue']}', 'unpaid')";
-                    
-                    if (!$conn->query($penalty_sql)) {
-                        throw new Exception("Error recording penalty: " . $conn->error);
-                    }
-                    
-                    // Update loan with penalty and status
-                    $update_loan_sql = "UPDATE loan SET 
-                                      DateReturned = '$return_date', 
-                                      PenaltyID = 1, 
-                                      Status = 'penalized' 
-                                      WHERE TransactionID = '$loan_id'";
-                } else {
-                    // Update loan with returned status
-                    $update_loan_sql = "UPDATE loan SET 
-                                      DateReturned = '$return_date', 
-                                      Status = 'returned' 
-                                      WHERE TransactionID = '$loan_id'";
-                }
-                
-                if (!$conn->query($update_loan_sql)) {
-                    throw new Exception("Error updating loan: " . $conn->error);
-                }
-                
-                // Update book status back to Available
-                $sql = "UPDATE book SET Status = 'Available' WHERE BookID = '$book_id'";
-                if (!$conn->query($sql)) {
-                    throw new Exception("Error updating book status: " . $conn->error);
-                }
-            }
-            
-            $conn->commit();
-            $success_message = count($selected_returns) . " book(s) returned successfully!";
-            
-            // Handle canceling returns
-        if (isset($_GET['clear_returns'])) {
-            $selected_returns = [];
-            $_SESSION['selected_returns'] = [];
-            $success_message = "Return process canceled. Books can be selected again.";
-            // Redirect to same page to refresh data
-            header("Location: loan_transactions.php?view=$view_borrower_id");
-            exit();
-}
-            
-        } catch (Exception $e) {
-            $conn->rollback();
-            $error_message = $e->getMessage();
+if (isset($_POST['return_book']) && isset($_POST['transaction_id'])) {
+    $transaction_id = $conn->real_escape_string($_POST['transaction_id']);
+    $return_date = date('Y-m-d');
+
+    // Fetch loan details
+    $loan_query = "SELECT l.TransactionID, l.BookID, l.DueDate, l.Status,
+                   DATEDIFF('$return_date', l.DueDate) AS days_overdue
+                   FROM loan l
+                   WHERE l.TransactionID = '$transaction_id'";
+    $loan_result = $conn->query($loan_query);
+
+    if ($loan_result && $loan_result->num_rows > 0) {
+        $loan_data = $loan_result->fetch_assoc();
+
+        if ($loan_data['Status'] === 'returned') {
+            $error_message = "This book has already been returned.";
+        } else {
+            $days_overdue = intval($loan_data['days_overdue']);
+            $penalty_amount = 0;
+
+            // Handle overdue penalties
+        if ($days_overdue > 0) {
+    // Fetch the PenaltyID and PenaltyRate
+    $penalty_query = "SELECT PenaltyID, PenaltyRate FROM penalty WHERE PenaltyName = 'Overdue' LIMIT 1";
+    $penalty_result = $conn->query($penalty_query);
+
+    if ($penalty_result && $penalty_result->num_rows > 0) {
+        $penalty_data = $penalty_result->fetch_assoc();
+        $penalty_id = $penalty_data['PenaltyID'];
+        $penalty_rate = floatval($penalty_data['PenaltyRate']);
+        $penalty_amount = $days_overdue * $penalty_rate;
+
+        // Insert penalty record
+        $penalty_sql = "INSERT INTO penaltytransaction (LoanID, PenaltyID, PenaltyAmount, PenaltyType, DateIssued, Remarks, Status) 
+                        VALUES ('$transaction_id', '$penalty_id', '$penalty_amount', 'overdue', '$return_date', 'Overdue by $days_overdue days', 'unpaid')";
+        if (!$conn->query($penalty_sql)) {
+            throw new Exception("Error recording penalty: " . $conn->error);
         }
+    } else {
+        // Handle missing penalty configuration
+        throw new Exception("Penalty configuration not found for overdue penalties.");
     }
 }
 
+            // Update loan status to returned
+            $update_loan_sql = "UPDATE loan SET 
+                                DateReturned = '$return_date', 
+                                Status = '" . ($days_overdue > 0 ? 'penalized' : 'returned') . "' 
+                                WHERE TransactionID = '$transaction_id'";
+            if (!$conn->query($update_loan_sql)) {
+                $error_message = "Error updating loan status: " . $conn->error;
+            }
+
+            // Increment TotalCopies for the returned book
+            $update_copies_sql = "UPDATE book 
+                                  SET TotalCopies = TotalCopies + 1 
+                                  WHERE BookID = '{$loan_data['BookID']}'";
+            if (!$conn->query($update_copies_sql)) {
+                $error_message = "Error updating book copies: " . $conn->error;
+            }
+
+            if (empty($error_message)) {
+                $success_message = "Book returned successfully!";
+            }
+        }
+    } else {
+        $error_message = "Loan record not found.";
+    }
+}
 // Handle updating return date and recalculating penalties
 if (isset($_POST['update_return_date_index']) && isset($_POST['update_return_date_value'])) {
     $index = intval($_POST['update_return_date_index']);
@@ -444,14 +455,14 @@ if (!empty($view_borrower_id)) {
     
     // Get all borrowed books for this borrower, excluding those already in return list
     $borrowed_sql = "SELECT l.TransactionID, l.BookID, l.DateBorrowed, l.DueDate, l.Status,
-                    b.Title, b.ISBN, b.AccessionNumber, b.CategoryID, c.CategoryName,
-                    a.FirstName AS AuthorFirstName, a.MiddleName AS AuthorMiddleName, a.LastName AS AuthorLastName
-                 FROM loan l
-                 JOIN book b ON l.BookID = b.BookID
-                 LEFT JOIN authors a ON b.AuthorID = a.AuthorID
-                 LEFT JOIN category c ON b.CategoryID = c.CategoryID
-                 WHERE l.BorrowerID = '$view_borrower_id'
-                 AND l.Status = 'borrowed'";
+    b.Title, b.ISBN, b.AccessionNumber, b.CategoryID, c.CategoryName,
+    a.FirstName AS AuthorFirstName, a.MiddleName AS AuthorMiddleName, a.LastName AS AuthorLastName
+    FROM loan l
+    JOIN book b ON l.BookID = b.BookID
+    LEFT JOIN authors a ON b.AuthorID = a.AuthorID
+    LEFT JOIN category c ON b.CategoryID = c.CategoryID
+    WHERE l.BorrowerID = '$view_borrower_id'
+    AND l.Status = 'borrowed'";
 
     // Exclude books already in return list
     if (!empty($selected_returns)) {
@@ -502,49 +513,53 @@ if (!empty($view_borrower_id)) {
     
     // Get all returned books for this borrower
     $returned_sql = "SELECT l.TransactionID, l.BookID, l.DateBorrowed, l.DueDate, l.DateReturned, l.Status,
-                        b.Title, b.ISBN, b.AccessionNumber, b.CategoryID, c.CategoryName,
-                        a.FirstName AS AuthorFirstName, a.MiddleName AS AuthorMiddleName, a.LastName AS AuthorLastName
-                     FROM loan l
-                     JOIN book b ON l.BookID = b.BookID
-                     LEFT JOIN authors a ON b.AuthorID = a.AuthorID
-                     LEFT JOIN category c ON b.CategoryID = c.CategoryID
-                     WHERE l.BorrowerID = '$view_borrower_id'
-                     AND l.Status = 'returned'
-                     ORDER BY l.DateReturned DESC
-                     LIMIT 10";
+                    b.Title, b.ISBN, b.AccessionNumber, b.CategoryID, c.CategoryName,
+                    a.FirstName AS AuthorFirstName, a.MiddleName AS AuthorMiddleName, a.LastName AS AuthorLastName,
+                    pt.PenaltyAmount, pt.Status AS PenaltyStatus
+                 FROM loan l
+                 JOIN book b ON l.BookID = b.BookID
+                 LEFT JOIN authors a ON b.AuthorID = a.AuthorID
+                 LEFT JOIN category c ON b.CategoryID = c.CategoryID
+                 LEFT JOIN penaltytransaction pt ON l.TransactionID = pt.LoanID
+                 WHERE l.BorrowerID = '$view_borrower_id'
+                 AND l.Status = 'returned'
+                 ORDER BY l.DateReturned DESC
+                 LIMIT 10";
     
     $returned_result = $conn->query($returned_sql);
     
-    if ($returned_result && $returned_result->num_rows > 0) {
-        while ($book = $returned_result->fetch_assoc()) {
-            // Format author name
-            $author = $book['AuthorFirstName'];
-            if (!empty($book['AuthorMiddleName'])) {
-                $author .= ' ' . $book['AuthorMiddleName'];
-            }
-            $author .= ' ' . $book['AuthorLastName'];
-            
-            // Calculate loan duration in days
-            $borrowed_date = new DateTime($book['DateBorrowed']);
-            $returned_date = new DateTime($book['DateReturned']);
-            $loan_duration = $borrowed_date->diff($returned_date)->days;
-            
-            $returned_books[] = [
-                'transaction_id' => $book['TransactionID'],
-                'book_id' => $book['BookID'],
-                'title' => $book['Title'],
-                'author' => $author,
-                'isbn' => $book['ISBN'],
-                'category' => $book['CategoryName'],
-                'accession_number' => $book['AccessionNumber'],
-                'date_borrowed' => $book['DateBorrowed'],
-                'due_date' => $book['DueDate'],
-                'date_returned' => $book['DateReturned'],
-                'loan_duration' => $loan_duration,
-                'status' => $book['Status']
-            ];
+if ($returned_result && $returned_result->num_rows > 0) {
+    while ($book = $returned_result->fetch_assoc()) {
+        // Format author name
+        $author = $book['AuthorFirstName'];
+        if (!empty($book['AuthorMiddleName'])) {
+            $author .= ' ' . $book['AuthorMiddleName'];
         }
+        $author .= ' ' . $book['AuthorLastName'];
+        
+        // Calculate loan duration in days
+        $borrowed_date = new DateTime($book['DateBorrowed']);
+        $returned_date = new DateTime($book['DateReturned']);
+        $loan_duration = $borrowed_date->diff($returned_date)->days;
+        
+        $returned_books[] = [
+            'transaction_id' => $book['TransactionID'],
+            'book_id' => $book['BookID'],
+            'title' => $book['Title'],
+            'author' => $author,
+            'isbn' => $book['ISBN'],
+            'category' => $book['CategoryName'],
+            'accession_number' => $book['AccessionNumber'],
+            'date_borrowed' => $book['DateBorrowed'],
+            'due_date' => $book['DueDate'],
+            'date_returned' => $book['DateReturned'],
+            'loan_duration' => $loan_duration,
+            'PenaltyAmount' => $book['PenaltyAmount'],
+            'PenaltyStatus' => $book['PenaltyStatus'],
+            'status' => $book['Status']
+        ];
     }
+}
     
     // Get all penalized books for this borrower
     $penalized_sql = "SELECT l.TransactionID, l.BookID, l.DateBorrowed, l.DueDate, l.DateReturned, l.Status,
@@ -611,7 +626,49 @@ if (!empty($borrower_details)) {
         $total_penalties = $penalty_row['TotalPenalty'] ?: 0;
     }
 }
+
+
+// Handle penalty payment status update
+if (isset($_POST['penalty_status']) && isset($_POST['transaction_id'])) {
+    $transaction_id = $conn->real_escape_string($_POST['transaction_id']);
+    $status = $conn->real_escape_string($_POST['penalty_status']);
+    $date_paid = ($status == 'paid') ? date('Y-m-d') : null;
+    
+    $update_sql = "UPDATE penaltytransaction SET 
+                  Status = '$status', 
+                  DatePaid = " . ($date_paid ? "'$date_paid'" : "NULL") . "
+                  WHERE LoanID = '$transaction_id'";
+    
+    if ($conn->query($update_sql)) {
+        $success_message = "Penalty status updated successfully!";
+        
+        // Also update loan status if all penalties are paid
+        if ($status == 'paid') {
+            $check_penalties = "SELECT COUNT(*) AS unpaid_count 
+                               FROM penaltytransaction 
+                               WHERE LoanID = '$transaction_id' 
+                               AND Status = 'unpaid'";
+            $result = $conn->query($check_penalties);
+            $row = $result->fetch_assoc();
+            
+            if ($row['unpaid_count'] == 0) {
+                $update_loan = "UPDATE loan SET Status = 'returned' 
+                               WHERE TransactionID = '$transaction_id'";
+                $conn->query($update_loan);
+            }
+        }
+    } else {
+        $error_message = "Error updating penalty status: " . $conn->error;
+    }
+    
+    // Refresh the page to show updated status
+    header("Location: loan_transactions.php?view=$view_borrower_id");
+    exit();
+}
+
+
 ?>
+
 
 <!-- MAIN CONTENT STRUCTURE -->
 <main class="content">
@@ -757,21 +814,24 @@ if (!empty($borrower_details)) {
                 <?php endif; ?>
             <?php else: ?>
                     <!-- BORROWER DETAILS VIEW -->
-                <div class="borrower-details">
-                    <h3>Borrower Information</h3>
-                    <?php if (!empty($borrower_details)): ?>
-                        <div class="borrower-info">
-                            <p><strong>ID no.:</strong> <?php echo $borrower_details['BorrowerID']; ?> <span class="gap"></span> <strong>Role:</strong> <?php echo $borrower_details['Role']; ?></p>
-                            <p><strong>First Name:</strong> <?php echo $borrower_details['FirstName']; ?> <span class="gap"></span> <strong>Contact Number:</strong> <?php echo $borrower_details['ContactNumber']; ?></p>
-                            <p><strong>Middle Name:</strong> <?php echo $borrower_details['MiddleName']; ?> <span class="gap"></span> <strong>Latest Penalty:</strong> 
-                            <?php 
-                                echo number_format($total_penalties, 2);
-                            ?>
-                            </p>
-                            <p><strong>Last Name:</strong> <?php echo $borrower_details['LastName']; ?></p>
-                        </div>
-                    <?php endif; ?>
-                </div>
+            <div class="borrower-details">
+   <div class="borrower-details">
+    <h3>Borrower Information</h3>
+    <?php if (!empty($borrower_details)): ?>
+        <div class="borrower-info two-column">
+            <div class="left-column">
+                <p><strong>ID no.:</strong> <?php echo $borrower_details['BorrowerID']; ?></p>
+                <p><strong>First Name:</strong> <?php echo $borrower_details['FirstName']; ?></p>
+                <p><strong>Middle Name:</strong> <?php echo $borrower_details['MiddleName']; ?></p>
+                <p><strong>Last Name:</strong> <?php echo $borrower_details['LastName']; ?></p>
+            </div>
+            <div class="right-column">
+                <p><strong>Role:</strong> <?php echo $borrower_details['Role']; ?></p>
+                <p><strong>Contact Number:</strong> <?php echo $borrower_details['ContactNumber']; ?></p>
+            </div>
+        </div>
+    <?php endif; ?>
+</div>
 
                 <!-- SELECTED BOOKS FOR RETURN SECTION -->
                 <?php if (!empty($selected_returns)): ?>
@@ -796,21 +856,25 @@ if (!empty($borrower_details)) {
                                 <tbody>
                                     <?php foreach ($selected_returns as $index => $book): ?>
                                     <tr>
-                                        <td><?php echo $index + 1; ?></td>
-                                        <td><?php echo $book['Title']; ?></td>
-                                        <td>
-                                            <?php 
-                                                $author = $book['AuthorFirstName'];
-                                                if (!empty($book['AuthorMiddleName'])) {
-                                                    $author .= ' ' . $book['AuthorMiddleName'];
-                                                }
-                                                $author .= ' ' . $book['AuthorLastName'];
-                                                echo $author;
-                                            ?>
-                                        </td>
-                                        <td><?php echo isset($book['CategoryName']) ? $book['CategoryName'] : ''; ?></td>
-                                        <td><?php echo $book['DateBorrowed']; ?></td>
-                                        <td><?php echo $book['DueDate']; ?></td>
+                                    <td><?php echo isset($book['Title']) ? $book['Title'] : 'Unknown Title'; ?></td>
+                                    <td>
+                                        <?php 
+                                        $author = '';
+                                        if (isset($book['AuthorFirstName'])) {
+                                            $author .= $book['AuthorFirstName'];
+                                        }
+                                        if (isset($book['AuthorMiddleName']) && !empty($book['AuthorMiddleName'])) {
+                                            $author .= ' ' . $book['AuthorMiddleName'];
+                                        }
+                                        if (isset($book['AuthorLastName'])) {
+                                            $author .= ' ' . $book['AuthorLastName'];
+                                        }
+                                        echo !empty($author) ? $author : 'Unknown Author';
+                                        ?>
+                                    </td>
+                                    <td><?php echo isset($book['CategoryName']) ? $book['CategoryName'] : 'Unknown Category'; ?></td>
+                                    <td><?php echo isset($book['DateBorrowed']) ? $book['DateBorrowed'] : 'N/A'; ?></td>
+                                    <td><?php echo isset($book['DueDate']) ? $book['DueDate'] : 'N/A'; ?></td>
                                         <td>
                                             <input type="date" class="date-input" name="return_date_<?php echo $index; ?>" 
                                                 value="<?php echo $book['return_date']; ?>" 
@@ -935,13 +999,14 @@ if (!empty($borrower_details)) {
                                                     ?>
                                                 </td>
                                                 <td>
-                                                    <form method="POST" action="">
-                                                        <input type="hidden" name="loan_id" value="<?php echo $book['transaction_id']; ?>">
-                                                        <button type="submit" name="add_book_return" class="return-btn">
-                                                            <i class="fas fa-undo-alt"></i> Return
-                                                        </button>
-                                                    </form>
-                                                </td>
+                                                <form method="POST" action="">
+                                                <input type="hidden" name="transaction_id" value="<?= $book['transaction_id'] ?>">
+                                                <button type="submit" name="return_book" class="return-btn">
+                                                    <i class="fas fa-undo"></i> Return
+                                                </button>
+                                            </form>
+                                            </td>
+                                             
                                             </tr>
                                             <?php endforeach; ?>
                                         </tbody>
@@ -967,6 +1032,7 @@ if (!empty($borrower_details)) {
                                                 <th>Date Borrowed</th>
                                                 <th>Date Returned</th>
                                                 <th>Duration</th>
+                                                <th>Penalty Paid</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -979,6 +1045,21 @@ if (!empty($borrower_details)) {
                                                 <td><?php echo date('M d, Y', strtotime($book['date_borrowed'])); ?></td>
                                                 <td><?php echo date('M d, Y', strtotime($book['date_returned'])); ?></td>
                                                 <td><?php echo $book['loan_duration']; ?> days</td>
+                                                <td>
+                                                    <?php if (!empty($book['PenaltyAmount'])): ?>
+                                                        <?php if ($book['PenaltyStatus'] == 'paid'): ?>
+                                                            <span class="status-badge status-paid">
+                                                                ₱<?php echo number_format($book['PenaltyAmount'], 2); ?> (Paid)
+                                                            </span>
+                                                        <?php else: ?>
+                                                            <span class="status-badge status-unpaid">
+                                                                ₱<?php echo number_format($book['PenaltyAmount'], 2); ?> (Unpaid)
+                                                            </span>
+                                                        <?php endif; ?>
+                                                    <?php else: ?>
+                                                        <span class="status-badge status-no-penalty">No Penalty</span>
+                                                    <?php endif; ?>
+                                                </td>
                                             </tr>
                                             <?php endforeach; ?>
                                         </tbody>
@@ -1006,10 +1087,17 @@ if (!empty($borrower_details)) {
                                                 <th>Days Overdue</th>
                                                 <th>Penalty Amount</th>
                                                 <th>Payment Status</th>
+                                                <th>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach ($penalized_books as $index => $book): ?>
+                                            <?php 
+                                            $total_penalty = 0;
+                                            foreach ($penalized_books as $index => $book): 
+                                                if ($book['penalty_status'] != 'paid') {
+                                                    $total_penalty += $book['penalty_amount'];
+                                                }
+                                            ?>
                                             <tr>
                                                 <td><?php echo $index + 1; ?></td>
                                                 <td><?php echo $book['title']; ?></td>
@@ -1020,16 +1108,50 @@ if (!empty($borrower_details)) {
                                                 <td><?php echo $book['days_overdue']; ?> days</td>
                                                 <td>₱<?php echo number_format($book['penalty_amount'], 2); ?></td>
                                                 <td>
-                                                    <?php if ($book['penalty_status'] == 'paid'): ?>
-                                                        <span class="status-badge status-paid">Paid</span>
-                                                    <?php else: ?>
-                                                        <span class="status-badge status-unpaid">Unpaid</span>
-                                                    <?php endif; ?>
+                                                    <form method="POST" action="" class="status-form">
+                                                        <input type="hidden" name="transaction_id" value="<?php echo $book['transaction_id']; ?>">
+                                                        <select name="penalty_status" onchange="this.form.submit()" class="status-select <?php echo $book['penalty_status'] == 'paid' ? 'paid' : 'unpaid'; ?>">
+                                                            <option value="unpaid" <?php echo $book['penalty_status'] == 'unpaid' ? 'selected' : ''; ?>>Unpaid</option>
+                                                            <option value="paid" <?php echo $book['penalty_status'] == 'paid' ? 'selected' : ''; ?>>Paid</option>
+                                                        </select>
+                                                    </form>
+                                                </td>
+                                                <td>
+                                                    <button class="invoice-btn" onclick="generateInvoice(<?php echo $book['transaction_id']; ?>)">
+                                                        <i class="fas fa-file-invoice"></i> Invoice
+                                                    </button>
                                                 </td>
                                             </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                     </table>
+                                    
+                                    <!-- Total Penalty Summary -->
+                                    <div class="total-penalty">
+                                        <strong>Total Outstanding Penalty:</strong> ₱<?php echo number_format($total_penalty, 2); ?>
+                                    </div>
+                                    
+
+                                    <!-- Invoice Generation Form -->
+                                    <form id="invoice_form" method="POST" action="generate_penalty_invoice.php" target="_blank">
+                                        <input type="hidden" name="borrower_id" value="<?php echo $view_borrower_id; ?>">
+                                        <input type="hidden" name="transaction_ids" id="invoice_transaction_ids">
+                                        <button type="button" class="generate-invoice-btn" onclick="prepareInvoice()">
+                                            <i class="fas fa-file-invoice-dollar"></i> Generate Combined Invoice
+                                        </button>
+                                    </form>
+                                </div>
+                                wewewqewewe
+                                
+                                <!-- Invoice Modal -->
+                                <div id="invoiceModal" class="modal" style="display:none;">
+                                    <div class="modal-content">
+                                        <span class="close" onclick="closeModal()">&times;</span>
+                                        <iframe id="invoiceFrame" style="width:100%; height:80vh; border:none;"></iframe>
+                                        <button class="print-btn" onclick="printInvoice()">
+                                            <i class="fas fa-print"></i> Print Invoice
+                                        </button>
+                                    </div>
                                 </div>
                             <?php else: ?>
                                 <p class="no-data">No penalties found for this borrower.</p>
@@ -1158,6 +1280,72 @@ function updateReturnDate(index, newDate) {
     // Submit the form
     document.body.appendChild(form);
     form.submit();
+}
+
+// Function to prepare invoice data before submission
+function prepareInvoice() {
+    // Get all checked or selected transaction IDs
+    const transactionIds = [];
+    
+    // For penalized books, we'll use all unpaid transactions
+    document.querySelectorAll('#penalized-books .status-select.unpaid').forEach(select => {
+        const form = select.closest('form');
+        const transactionId = form.querySelector('input[name="transaction_id"]').value;
+        transactionIds.push(transactionId);
+    });
+    
+    if (transactionIds.length === 0) {
+        alert('No unpaid penalties found to generate invoice.');
+        return;
+    }
+    
+    // Set the transaction IDs in the form
+    document.getElementById('invoice_transaction_ids').value = transactionIds.join(',');
+    
+    // Submit the form
+    document.getElementById('invoice_form').submit();
+}
+
+// Function to generate invoice for a single transaction
+function generateInvoice(transactionId) {
+    // Create a temporary form
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'generate_penalty_invoice.php';
+    form.target = '_blank';
+    
+    // Add borrower ID
+    const borrowerField = document.createElement('input');
+    borrowerField.type = 'hidden';
+    borrowerField.name = 'borrower_id';
+    borrowerField.value = '<?php echo $view_borrower_id; ?>';
+    form.appendChild(borrowerField);
+    
+    // Add transaction ID
+    const transactionField = document.createElement('input');
+    transactionField.type = 'hidden';
+    transactionField.name = 'transaction_id';
+    transactionField.value = transactionId;
+    form.appendChild(transactionField);
+    
+    // Submit the form
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+}
+
+// Modal functions
+function openModal(content) {
+    document.getElementById('invoiceContent').innerHTML = content;
+    document.getElementById('invoiceModal').style.display = 'block';
+}
+
+function closeModal() {
+    document.getElementById('invoiceModal').style.display = 'none';
+}
+
+function printInvoice() {
+    window.print();
 }
 
 

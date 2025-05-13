@@ -316,6 +316,7 @@ if (isset($_POST['remove_book']) && isset($_POST['remove_index'])) {
 }
 
 // Process loan submission
+// Process loan submission
 if (isset($_POST['submit_loan']) && !empty($selected_books) && !empty($borrower_data)) {
     if ($valid_personnel_id === null) {
         $error_message = "No valid personnel found in the system.";
@@ -323,29 +324,47 @@ if (isset($_POST['submit_loan']) && !empty($selected_books) && !empty($borrower_
         $conn->begin_transaction();
         
         try {
+            $fiction_count = 0;
+            $nonfiction_count = 0;
             foreach ($selected_books as $book) {
                 $book_id = $book['BookID'];
                 $date_loan = $conn->real_escape_string($book['date_loan']);
                 $due_date = $conn->real_escape_string($book['due_date']);
-                
+            
+                // Fetch the book's details
+                $book_query = "SELECT TotalCopies FROM book WHERE BookID = '$book_id'";
+                $book_result = $conn->query($book_query);
+                if (!$book_result || $book_result->num_rows == 0) {
+                    throw new Exception("Book not found or unavailable.");
+                }
+                $book_info = $book_result->fetch_assoc();
+                $available_copies = $book_info['TotalCopies'];
+            
+                // Check if the book can still be borrowed
+                if ($available_copies <= 0) {
+                    throw new Exception("The book '{$book['Title']}' has no available copies for borrowing.");
+                }
+            
+                // Insert loan record
                 $sql = "INSERT INTO loan (BorrowerID, BookID, DateBorrowed, DueDate, PersonnelID, Status) 
-                       VALUES ('{$borrower_data['BorrowerID']}', '$book_id', '$date_loan', '$due_date', '$valid_personnel_id', 'borrowed')";
-                
+                        VALUES ('{$borrower_data['BorrowerID']}', '$book_id', '$date_loan', '$due_date', '$valid_personnel_id', 'borrowed')";
                 if (!$conn->query($sql)) {
                     throw new Exception("Error recording loan: " . $conn->error);
                 }
-                
-                $sql = "UPDATE book SET Status = 'On Loan' WHERE BookID = '$book_id'";
+            
+                // Decrement TotalCopies to reflect the borrowed copies
+                $sql = "UPDATE book 
+                        SET TotalCopies = TotalCopies - 1 
+                        WHERE BookID = '$book_id' AND TotalCopies > 0";
                 if (!$conn->query($sql)) {
-                    throw new Exception("Error updating book status: " . $conn->error);
+                    throw new Exception("Error updating TotalCopies: " . $conn->error);
                 }
             }
-            
             $conn->commit();
             $_SESSION['success_message'] = count($selected_books) . " book(s) loaned successfully!";
             unset($_SESSION['selected_books']);
 
-            // Redirect back to same borrower view
+            // Redirect back to the same borrower view
             header("Location: loan.php?borrower_id=" . $borrower_data['BorrowerID']);
             exit();
         } catch (Exception $e) {
@@ -383,6 +402,74 @@ if (!empty($borrower_data)) {
     $other_loans_result = $conn->query($other_loans_sql);
     if ($other_loans_result && $other_loans_result->num_rows > 0) {
         $total_borrowed_other = $other_loans_result->fetch_assoc()['other_loans'];
+    }
+}
+
+// Process return submission
+if (isset($_POST['submit_returns']) && !empty($selected_returns)) {
+    $conn->begin_transaction();
+
+    try {
+        foreach ($selected_returns as $book) {
+            $loan_id = $book['TransactionID'];
+            $return_date = $conn->real_escape_string($book['return_date']);
+            $book_id = $book['BookID'];
+
+            // Check if the book has already been returned
+            $status_check_query = "SELECT Status FROM loan WHERE TransactionID = '$loan_id'";
+            $status_check_result = $conn->query($status_check_query);
+            if ($status_check_result && $status_check_result->num_rows > 0) {
+                $status_row = $status_check_result->fetch_assoc();
+                if ($status_row['Status'] === 'returned') {
+                    // Skip this book as it has already been returned
+                    continue;
+                }
+            }
+
+            // Handle overdue penalties if needed
+            if ($book['days_overdue'] > 0) {
+                // Insert into penalty transaction table
+                $penalty_amount = $book['penalty_amount'];
+                $penalty_sql = "INSERT INTO penaltytransaction (LoanID, PenaltyID, PenaltyAmount, PenaltyType, DateIssued, Remarks, Status) 
+                                VALUES ('$loan_id', 1, '$penalty_amount', 'overdue', '$return_date', 'Days Overdue: {$book['days_overdue']}', 'unpaid')";
+                if (!$conn->query($penalty_sql)) {
+                    throw new Exception("Error recording penalty: " . $conn->error);
+                }
+
+                // Update loan with penalty and status
+                $update_loan_sql = "UPDATE loan SET 
+                                    DateReturned = '$return_date', 
+                                    PenaltyID = 1, 
+                                    Status = 'penalized' 
+                                    WHERE TransactionID = '$loan_id'";
+            } else {
+                // Update loan with returned status
+                $update_loan_sql = "UPDATE loan SET 
+                                    DateReturned = '$return_date', 
+                                    Status = 'returned' 
+                                    WHERE TransactionID = '$loan_id'";
+            }
+
+            if (!$conn->query($update_loan_sql)) {
+                throw new Exception("Error updating loan: " . $conn->error);
+            }
+
+            // Increment TotalCopies to reflect the returned book
+            $sql = "UPDATE book 
+                    SET TotalCopies = TotalCopies + 1 
+                    WHERE BookID = '$book_id'";
+            if (!$conn->query($sql)) {
+                throw new Exception("Error updating TotalCopies: " . $conn->error);
+            }
+        }
+
+        $conn->commit();
+        $success_message = count($selected_returns) . " book(s) returned successfully!";
+        $selected_returns = [];
+        $_SESSION['selected_returns'] = [];
+    } catch (Exception $e) {
+        $conn->rollback();
+        $error_message = $e->getMessage();
     }
 }
 ?>
@@ -431,111 +518,107 @@ if (!empty($borrower_data)) {
                 <!-- Borrower Info -->
                 <div class="borrower-info">
                     <?php if (!empty($borrower_data)): ?>
-                        <p><strong>ID no.:</strong> <?php echo $borrower_data['BorrowerID']; ?> <span class="gap"></span> <strong>Role:</strong> <?php echo $borrower_data['Role']; ?></p>
-                        <p><strong>First Name:</strong> <?php echo $borrower_data['FirstName']; ?> <span class="gap"></span> <strong>Contact Number:</strong> <?php echo $borrower_data['ContactNumber']; ?></p>
-                        <p><strong>Middle Name:</strong> <?php echo $borrower_data['MiddleName']; ?> 
-                        <?php 
-                            $penalty_query = "SELECT SUM(pt.PenaltyAmount) as TotalPenalty 
-                            FROM loan bl 
-                            JOIN PenaltyTransaction pt ON bl.TransactionID = pt.LoanID 
-                            WHERE bl.BorrowerID = '{$borrower_data['BorrowerID']}' 
-                            AND bl.Status = 'penalized'";
-                            $penalty_result = $conn->query($penalty_query);
-                            $penalty_amount = 0;
-                            if ($penalty_result && $penalty_result->num_rows > 0) {
-                                $penalty_row = $penalty_result->fetch_assoc();
-                                $penalty_amount = $penalty_row['TotalPenalty'] ?: 0;
-                            }
-                            echo number_format($penalty_amount, 2);
-                        ?>
+                        <p>
+                            <strong>ID no.:</strong> 
+                            <span><?php echo $borrower_data['BorrowerID']; ?></span>
                         </p>
-                        <p><strong>Last Name:</strong> <?php echo $borrower_data['LastName']; ?></p>
+                         <p>
+                            <strong>Last Name:</strong> 
+                            <span><?php echo $borrower_data['LastName']; ?></span>
+                        </p>
+                      
+                        <p>
+                            <strong>First Name:</strong> 
+                            <span><?php echo $borrower_data['FirstName']; ?></span>
+                        </p>
+                        <p>
+                            <strong>Contact Number:</strong> 
+                            <span><?php echo $borrower_data['ContactNumber']; ?></span>
+                        </p>
+                        <p>
+                            <strong>Middle Name:</strong> 
+                            <span><?php echo $borrower_data['MiddleName']; ?></span>
+                        </p>
+                          <p>
+                            <strong>Role:</strong> 
+                            <span><?php echo $borrower_data['Role']; ?></span>
+                        </p>
+                       
                     <?php else: ?>
-                        <p><strong>ID no.:</strong> <span class="gap"></span> <strong>Role:</strong></p>
-                        <p><strong>First Name:</strong> <span class="gap"></span> <strong>Contact Number:</strong></p>
-                        <p><strong>Middle Name:</strong> <span class="gap"></span>
-                        <p><strong>Last Name:</strong></p>
+                        <p><strong>ID no.:</strong> <span></span></p>
+                        <p><strong>Role:</strong> <span></span></p>
+                        <p><strong>First Name:</strong> <span></span></p>
+                        <p><strong>Contact Number:</strong> <span></span></p>
+                        <p><strong>Middle Name:</strong> <span></span></p>
+                        <p><strong>Last Name:</strong> <span></span></p>
                     <?php endif; ?>
                 </div>
 
                     
-                    <!-- Currently Borrowed Books Section -->
-                    <?php if (!empty($borrower_data)): 
-                        $borrowed_sql = "SELECT b.*, l.DateBorrowed, l.DueDate, 
-                                        a.FirstName AS AuthorFirstName, a.MiddleName AS AuthorMiddleName, 
-                                        a.LastName AS AuthorLastName, c.CategoryName
-                                        FROM loan l
-                                        JOIN book b ON l.BookID = b.BookID
-                                        LEFT JOIN authors a ON b.AuthorID = a.AuthorID
-                                        LEFT JOIN category c ON b.CategoryID = c.CategoryID
-                                        WHERE l.BorrowerID = '{$borrower_data['BorrowerID']}' 
-                                        AND l.Status = 'borrowed'";
-                        $borrowed_result = $conn->query($borrowed_sql);
-                        
-                        if ($borrowed_result && $borrowed_result->num_rows > 0):
-                            $currently_borrowed_books = $borrowed_result->fetch_all(MYSQLI_ASSOC);
-                    ?>
-                    <div class="currently-borrowed-section">
-                        <h3 class="section-title">Currently Borrowed Books (<?php echo $total_borrowed; ?>/<?php echo $MAX_TOTAL_BOOKS; ?>)</h3>
-                    <div class="borrowed-books-list">
-                        <table class="selected-books-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Title</th>
-                                    <th>Author</th>
-                                    <th>Category</th>
-                                    <th>Date Borrowed</th>
-                                    <th>Due Date</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($currently_borrowed_books as $index => $book): ?>
-                                <tr>
-                                    <td><?php echo $index + 1; ?></td>
-                                    <td><?php echo $book['Title']; ?></td>
-                                    <td>
-                                        <?php 
-                                            $author = $book['AuthorFirstName'];
-                                            if (!empty($book['AuthorMiddleName'])) {
-                                                $author .= ' ' . $book['AuthorMiddleName'];
-                                            }
-                                            $author .= ' ' . $book['AuthorLastName'];
-                                            echo $author;
-                                        ?>
-                                    </td>
-                                    <td>
-                                        <?php 
-                                            echo $book['CategoryName']; 
-                                            if ($book['CategoryID'] == 1) {
-                                                echo ' <span class="category-badge fiction"></span>';
-                                            } else {
-                                                echo ' <span class="category-badge non-fiction">(Non-Fiction)</span>';
-                                            }
-                                        ?>
-                                    </td>
-                                    <td><?php echo $book['DateBorrowed']; ?></td>
-                                    <td><?php echo $book['DueDate']; ?></td>
-                                    <td>
-                                    <?php 
-                                        $today_date = date('Y-m-d');
-                                        $due_date = $book['DueDate'];
-                                        if ($today_date > $due_date) {
-                                            echo '<span style="color:red">Overdue</span>';
-                                        } else {
-                                            echo 'Active';
-                                        }
-                                    ?>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                   <!-- Currently Borrowed Books Section -->
+                <?php
+                if (!empty($borrower_data)):
+
+                    // Fix: assign BorrowerID to $view_borrower_id
+                    $view_borrower_id = $borrower_data['BorrowerID'];
+
+                    $borrowed_sql = "SELECT l.TransactionID, l.BookID, l.DateBorrowed, l.DueDate, l.Status,
+                    b.Title, b.ISBN, b.AccessionNumber, b.CategoryID, c.CategoryName,
+                    a.FirstName AS AuthorFirstName, a.MiddleName AS AuthorMiddleName, a.LastName AS AuthorLastName
+                    FROM loan l
+                    JOIN book b ON l.BookID = b.BookID
+                    LEFT JOIN authors a ON b.AuthorID = a.AuthorID
+                    LEFT JOIN category c ON b.CategoryID = c.CategoryID
+                    WHERE l.BorrowerID = '$view_borrower_id'
+                    AND l.Status = 'borrowed'";
+
+                    $borrowed_result = $conn->query($borrowed_sql);
                     
-                </div>
-                <?php endif; endif; ?>
+                    if ($borrowed_result && $borrowed_result->num_rows > 0):
+                        $currently_borrowed_books = $borrowed_result->fetch_all(MYSQLI_ASSOC);
+                ?>
+
+                        <div class="currently-borrowed-section">
+                            <h3 class="section-title">Currently Borrowed Books</h3>
+                            <div class="borrowed-books-list">
+                                <table class="selected-books-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Title</th>
+                                            <th>Author</th>
+                                            <th>Category</th>
+                                            <th>Date Borrowed</th>
+                                            <th>Due Date</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($currently_borrowed_books as $index => $book): ?>
+                                        <tr>
+                                            <td><?= $index + 1 ?></td>
+                                            <td><?= htmlspecialchars($book['Title']) ?></td>
+                                            <td>
+                                                <?= htmlspecialchars($book['AuthorFirstName'] . ' ' . $book['AuthorMiddleName'] . ' ' . $book['AuthorLastName']) ?>
+                                            </td>
+                                            <td><?= htmlspecialchars($book['CategoryName']) ?></td>
+                                            <td><?= htmlspecialchars($book['DateBorrowed']) ?></td>
+                                            <td><?= htmlspecialchars($book['DueDate']) ?></td>
+                                            <td>
+                                            <form method="POST" action="">
+                            <input type="hidden" name="transaction_id" value="<?= $book['TransactionID'] ?>">
+                            <button type="submit" name="return_book" class="return-btn">
+                                <i class="fas fa-undo"></i> Return
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+<?php endif; endif; ?>
 
                 <!-- Book Search Section -->
                 <?php 
@@ -581,82 +664,109 @@ if (!empty($borrower_data)) {
                         <button type="submit" name="search_book" class="search-btn">Search</button>
                     </form>
 
-                    <!-- Book Info Display -->
-                    <div class="borrower-info">
-                        <?php if (!empty($book_data)): 
-                            $book_loan_duration = $default_loan_duration;
-                            if ($book_data['CategoryID'] == 1) {
-                                $fiction_duration_query = "SELECT Duration FROM penalty WHERE PenaltyName = 'Overdue (Fiction)' LIMIT 1";
-                                $fiction_duration_result = $conn->query($fiction_duration_query);
-                                
-                                if ($fiction_duration_result && $fiction_duration_result->num_rows > 0) {
-                                    $book_loan_duration = intval($fiction_duration_result->fetch_assoc()['Duration']);
-                                }
-                            }
-                            
-                            $book_due_date = date('Y-m-d', strtotime("+$book_loan_duration days"));
-                            $category_limit_reached = false;
-                            if ($book_data['CategoryID'] == 1 && $total_borrowed_fiction + $selected_fiction_count >= $MAX_FICTION_BOOKS) {
-                                $category_limit_reached = true;
-                            } elseif ($book_data['CategoryID'] != 1 && $total_borrowed_other + $selected_other_count >= $MAX_OTHER_BOOKS) {
-                                $category_limit_reached = true;
-                            }
-                        ?>
-                            <p><strong>Title:</strong> <?php echo $book_data['Title']; ?> <span class="gap"></span> <strong>Category:</strong> <?php echo $book_data['Category']; ?> 
-                                <?php if ($book_data['CategoryID'] == 1): ?>
-                                    <span class="category-badge fiction">Fiction</span>
-                                <?php else: ?>
-                                    <span class="category-badge non-fiction">Non-Fiction</span>
-                                <?php endif; ?>
-                            </p>
-                            <p><strong>ISBN:</strong> <?php echo $book_data['ISBN']; ?> <span class="gap"></span> <strong>Classification:</strong> <?php echo $book_data['Classification']; ?></p>
-                            <p><strong>Author:</strong> 
-                                <?php 
-                                    $author = $book_data['AuthorFirstName'];
-                                    if (!empty($book_data['AuthorMiddleName'])) {
-                                        $author .= ' ' . $book_data['AuthorMiddleName'];
-                                    }
-                                    $author .= ' ' . $book_data['AuthorLastName'];
-                                    echo $author;
-                                ?> 
-                                <span class="gap"></span> <strong>Status:</strong> <?php echo $book_data['Status']; ?>
-                            </p>
-                            <p><strong>Call Number:</strong> <?php echo $book_data['CallNumber']; ?> <span class="gap"></span> <strong>Date Loan:</strong> <?php echo $today; ?></p>
-                            <p><strong>No. of Copy:</strong> <span id="available-copies"><?php echo $book_data['TotalCopies'] - $book_data['HoldCopies']; ?></span> available of <?php echo $book_data['TotalCopies']; ?> <span class="gap"></span> <strong>Due Date:</strong> <?php echo $book_due_date; ?></p>
-                            <p><strong>Subject:</strong> <?php echo $book_data['ClassificationNumber']; ?> <span class="gap"></span> <strong>Year:</strong> <?php echo $book_data['Year']; ?></p>
-                            <p><strong>Publisher:</strong> <?php echo $book_data['Publisher']; ?> <span class="gap"></span> <strong>Edition:</strong> <?php echo $book_data['Edition']; ?></p>
-                            <p><strong>Accession Number:</strong> <?php echo $book_data['AccessionNumber']; ?> <span class="gap"></span> <strong>Location:</strong> <?php echo $book_data['LocationName']; ?></p>
-                            <p><strong>Price:</strong> <?php echo number_format($book_data['Price'], 2); ?></p>
-                            
-                            <!-- Add Book Button -->
-                            <form method="POST" action="">
-                                <input type="hidden" name="book_id" value="<?php echo $book_data['BookID']; ?>">
-                                <input type="hidden" name="borrower_id" value="<?php echo $borrower_data['BorrowerID']; ?>">
-                                <button type="submit" name="add_book" class="add-btn" <?php echo (empty($borrower_data) || $category_limit_reached) ? 'disabled' : ''; ?>>
-                                    <i class="fas fa-plus"></i> Add Book
-                                </button>
-                                <?php if ($category_limit_reached): ?>
-                                    <span class="limit-warning">
-                                        <?php if ($book_data['CategoryID'] == 1): ?>
-                                            Maximum fiction book limit reached (<?php echo $MAX_FICTION_BOOKS; ?> books)
-                                        <?php else: ?>
-                                            Maximum non-fiction book limit reached (<?php echo $MAX_OTHER_BOOKS; ?> books)
-                                        <?php endif; ?>
-                                    </span>
-                                <?php endif; ?>
-                            </form>
+<!-- Book Info Display -->
+<div class="borrower-info book-info">
+    <?php if (!empty($book_data)): ?>
+        <?php
+            $book_loan_duration = $default_loan_duration;
+            if ($book_data['CategoryID'] == 1) {
+                $fiction_duration_query = "SELECT Duration FROM penalty WHERE PenaltyName = 'Overdue (Fiction)' LIMIT 1";
+                $fiction_duration_result = $conn->query($fiction_duration_query);
+                if ($fiction_duration_result && $fiction_duration_result->num_rows > 0) {
+                    $book_loan_duration = intval($fiction_duration_result->fetch_assoc()['Duration']);
+                }
+            }
+
+            $book_due_date = date('Y-m-d', strtotime("+$book_loan_duration days"));
+            $category_limit_reached = false;
+            if ($book_data['CategoryID'] == 1 && $total_borrowed_fiction + $selected_fiction_count >= $MAX_FICTION_BOOKS) {
+                $category_limit_reached = true;
+            } elseif ($book_data['CategoryID'] != 1 && $total_borrowed_other + $selected_other_count >= $MAX_OTHER_BOOKS) {
+                $category_limit_reached = true;
+            }
+        ?>
+
+        <div class="book-columns">
+            <!-- LEFT COLUMN -->
+            <div class="book-column">
+                <p><strong>Title:</strong> <span><?php echo $book_data['Title']; ?></span></p>
+                <p><strong>Category:</strong> 
+                    <span>
+                        <?php echo $book_data['Category']; ?>
+                        <?php if ($book_data['CategoryID'] == 1): ?>
+                            <span class="category-badge fiction">Fiction</span>
                         <?php else: ?>
-                            <p><strong>Title:</strong> <span class="gap"></span> <strong>Category:</strong></p>
-                            <p><strong>ISBN:</strong> <span class="gap"></span> <strong>Classification:</strong></p>
-                            <p><strong>Author:</strong> <span class="gap"></span> <strong>Status:</strong></p>
-                            <p><strong>Call Number:</strong> <span class="gap"></span> <strong>Date Loan:</strong> <?php echo $today; ?></p>
-                            <p><strong>No. of Copy:</strong> <span class="gap"></span> <strong>Due Date:</strong> <?php echo $default_due_date; ?></p>
-                            <p><strong>Subject:</strong> <span class="gap"></span> <strong>Year:</strong></p>
-                            <p><strong>Publisher:</strong> <span class="gap"></span> <strong>Edition:</strong></p>
-                            <p><strong>Accession Number:</strong> <span class="gap"></span> <strong>Location:</strong></p>
-                            <p><strong>Price:</strong></p>
+                            <span class="category-badge non-fiction">Non-Fiction</span>
                         <?php endif; ?>
-                    </div>
+                    </span>
+                </p>
+                <p><strong>ISBN:</strong> <span><?php echo $book_data['ISBN']; ?></span></p>
+                <p><strong>Classification:</strong> <span><?php echo $book_data['Classification']; ?></span></p>
+                <p><strong>Author:</strong> 
+                    <span>
+                        <?php 
+                            $author = $book_data['AuthorFirstName'];
+                            if (!empty($book_data['AuthorMiddleName'])) {
+                                $author .= ' ' . $book_data['AuthorMiddleName'];
+                            }
+                            $author .= ' ' . $book_data['AuthorLastName'];
+                            echo $author;
+                        ?>
+                    </span>
+                </p>
+                <p><strong>Status:</strong> <span><?php echo $book_data['Status']; ?></span></p>
+                <p><strong>Call Number:</strong> <span><?php echo $book_data['CallNumber']; ?></span></p>
+            </div>
+
+            <!-- RIGHT COLUMN -->
+            <div class="book-column">
+                <p><strong>No. of Copy:</strong> <span id="available-copies"><?php echo $book_data['TotalCopies'] - $book_data['HoldCopies']; ?> available of <?php echo $book_data['TotalCopies']; ?></span></p>
+                <p><strong>Subject:</strong> <span><?php echo $book_data['ClassificationNumber']; ?></span></p>
+                <p><strong>Year:</strong> <span><?php echo $book_data['Year']; ?></span></p>
+                <p><strong>Publisher:</strong> <span><?php echo $book_data['Publisher']; ?></span></p>
+                <p><strong>Edition:</strong> <span><?php echo $book_data['Edition']; ?></span></p>
+                <p><strong>Accession Number:</strong> <span><?php echo $book_data['AccessionNumber']; ?></span></p>
+                <p><strong>Location:</strong> <span><?php echo $book_data['LocationName']; ?></span></p>
+                <p><strong>Price:</strong> <span><?php echo number_format($book_data['Price'], 2); ?></span></p>
+            </div>
+        </div>
+
+        <div class="add-book-btn-container">
+            <form method="POST" action="">
+                <input type="hidden" name="book_id" value="<?php echo $book_data['BookID']; ?>">
+                <input type="hidden" name="borrower_id" value="<?php echo $borrower_data['BorrowerID']; ?>">
+                <button type="submit" name="add_book" class="add-btn" <?php echo (empty($borrower_data) || $category_limit_reached) ? 'disabled' : ''; ?>>
+                    <i class="fas fa-plus"></i> Add Book
+                </button>
+                <?php if ($category_limit_reached): ?>
+                    <span class="limit-warning">
+                        <?php if ($book_data['CategoryID'] == 1): ?>
+                            Maximum fiction book limit reached (<?php echo $MAX_FICTION_BOOKS; ?> books)
+                        <?php else: ?>
+                            Maximum non-fiction book limit reached (<?php echo $MAX_OTHER_BOOKS; ?> books)
+                        <?php endif; ?>
+                    </span>
+                <?php endif; ?>
+            </form>
+        </div>
+    <?php else: ?>
+        <p><strong>Title:</strong> <span></span></p>
+        <p><strong>Category:</strong> <span></span></p>
+        <p><strong>ISBN:</strong> <span></span></p>
+        <p><strong>Classification:</strong> <span></span></p>
+        <p><strong>Author:</strong> <span></span></p>
+        <p><strong>Status:</strong> <span></span></p>
+        <p><strong>Call Number:</strong> <span></span></p>
+        <p><strong>No. of Copy:</strong> <span></span></p>
+        <p><strong>Subject:</strong> <span></span></p>
+        <p><strong>Year:</strong> <span></span></p>
+        <p><strong>Publisher:</strong> <span></span></p>
+        <p><strong>Edition:</strong> <span></span></p>
+        <p><strong>Accession Number:</strong> <span></span></p>
+        <p><strong>Location:</strong> <span></span></p>
+        <p><strong>Price:</strong> <span></span></p>
+    <?php endif; ?>
+</div>
                 <?php elseif (!empty($borrower_data) && ($total_borrowed + count($selected_books)) >= $MAX_TOTAL_BOOKS): ?>
                     <div class="alert alert-warning">
                         <strong>Maximum Limit Reached:</strong> This borrower has already loaned/selected <?php echo $total_borrowed + count($selected_books); ?> books (maximum <?php echo $MAX_TOTAL_BOOKS; ?> books allowed).
@@ -971,41 +1081,49 @@ if (!empty($borrower_data)) {
             });
         }
         
-        window.updateBookDate = function(index, type, value) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.style.display = 'none';
-            
-            const indexInput = document.createElement('input');
-            indexInput.type = 'hidden';
-            indexInput.name = 'update_date_index';
-            indexInput.value = index;
-            form.appendChild(indexInput);
-            
-            const typeInput = document.createElement('input');
-            typeInput.type = 'hidden';
-            typeInput.name = 'update_date_type';
-            typeInput.value = type;
-            form.appendChild(typeInput);
-            
-            const valueInput = document.createElement('input');
-            valueInput.type = 'hidden';
-            valueInput.name = 'update_date_value';
-            valueInput.value = value;
-            form.appendChild(valueInput);
-            
-            const borrowerIdField = document.querySelector('input[name="borrower_id"]');
-            if (borrowerIdField) {
-                const borrowerIdInput = document.createElement('input');
-                borrowerIdInput.type = 'hidden';
-                borrowerIdInput.name = 'borrower_id';
-                borrowerIdInput.value = borrowerIdField.value;
-                form.appendChild(borrowerIdInput);
+       window.updateBookDate = function(index, type, value) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.style.display = 'none';
+
+        const indexInput = document.createElement('input');
+        indexInput.type = 'hidden';
+        indexInput.name = 'update_date_index';
+        indexInput.value = index;
+        form.appendChild(indexInput);
+
+        const typeInput = document.createElement('input');
+        typeInput.type = 'hidden';
+        typeInput.name = 'update_date_type';
+        typeInput.value = type;
+        form.appendChild(typeInput);
+
+        const valueInput = document.createElement('input');
+        valueInput.type = 'hidden';
+        valueInput.name = 'update_date_value';
+        valueInput.value = value;
+        form.appendChild(valueInput);
+
+        const borrowerIdField = document.querySelector('input[name="borrower_id"]');
+        if (borrowerIdField) {
+            const borrowerIdInput = document.createElement('input');
+            borrowerIdInput.type = 'hidden';
+            borrowerIdInput.name = 'borrower_id';
+            borrowerIdInput.value = borrowerIdField.value;
+            form.appendChild(borrowerIdInput);
+        }
+
+        // Dynamically update the displayed due date
+        if (type === 'due_date') {
+            const dueDateDisplay = document.getElementById('due-date-display');
+            if (dueDateDisplay) {
+                dueDateDisplay.textContent = value; // Update the span with the new due date
             }
-            
-            document.body.appendChild(form);
-            form.submit();
-        };
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+    };
     });
     </script>
 </body>

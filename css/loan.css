@@ -286,6 +286,149 @@
     margin-bottom: 15px;
 }
 
+
+/* Borrower Info and Book Info Alignment Fixes */
+.loan-section .borrower-info {
+    background-color: white;
+    border: 1px solid #ccc;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    font-size: 14px;
+    line-height: 1.6;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.loan-section .borrower-info p {
+    margin: 0;
+    padding: 5px 0;
+
+    justify-content: space-between;
+}
+
+.loan-section .borrower-info strong {
+    min-width: 120px; /* Adjust this value based on your longest label */
+    display: inline-block;
+}
+
+/* Remove the gap span since we're using grid layout */
+.loan-section .gap {
+    display: none;
+}
+
+/* Book Info Specific Styles */
+.loan-section .book-info {
+    background-color: white;
+    border: 1px solid #ccc;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    font-size: 14px;
+    line-height: 1.6;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.loan-section .book-info p {
+    margin: 0;
+    padding: 5px 0;
+    justify-content: space-between;
+}
+
+.loan-section .book-info strong {
+    min-width: 120px; /* Adjust this value based on your longest label */
+    display: inline-block;
+}
+
+/* Category Badges */
+.category-badge {
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    margin-left: 5px;
+}
+
+.category-badge.fiction {
+    background-color: #d4edff;
+    color: #004085;
+    border: 1px solid #b8daff;
+}
+
+.category-badge.non-fiction {
+    background-color: #e2e3e5;
+    color: #383d41;
+    border: 1px solid #d6d8db;
+}
+
+/* Add Book Button Container */
+.add-book-btn-container {
+    grid-column: 1 / -1;
+    margin-top: 10px;
+    text-align: center;
+}
+
+/* Limit Warning */
+.limit-warning {
+    color: #dc3545;
+    font-size: 12px;
+    margin-left: 3px;
+}
+
+
+.book-columns {
+    display: flex;
+    gap: 40px;
+
+    margin-bottom: 1em;
+}
+
+.book-column {
+    flex: 1 1 300px;
+    min-width: 350px;
+}
+
+.book-column p {
+    margin: 6px 0;
+}
+
+.limit-warning {
+    color: red;
+    font-size: 0.9em;
+    display: block;
+    margin-top: 10px;
+}
+
+
+
+
+/* Responsive Adjustments */
+@media screen and (max-width: 768px) {
+    .loan-section .borrower-info,
+    .loan-section .book-info {
+        grid-template-columns: 1fr;
+    }
+    
+    .loan-section .borrower-info p,
+    .loan-section .book-info p {
+        flex-direction: column;
+    }
+    
+    .loan-section .borrower-info strong,
+    .loan-section .book-info strong {
+        min-width: auto;
+        margin-bottom: 3px;
+    }
+    
+    .add-book-btn-container {
+        text-align: left;
+    }
+}
+
+
+
 /* Responsive (Optional) */
 @media screen and (max-width: 768px) {
     .loan-section .search-form {

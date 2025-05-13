@@ -46,8 +46,6 @@
             </a>
             <ul class="dropdown-content">
                 <li><a href="loan.php">Loan</a></li>
-                <li><a href="return.php">Return</a></li>
-                <li><a href="penalized.php">Penalized</a></li>
             </ul>
         </li>
 
@@ -58,8 +56,8 @@
                 <i class="fas fa-chevron-down arrow"></i>
             </a>
             <ul class="dropdown-content">
-                <li><a href="purchaseOrder.php">Purchase Order</a></li>
-                <li><a href="stockIn.php">Stock in</a></li>
+                <li><a href="add_po.php">Purchase Order</a></li>
+                <li><a href="stocks.php">Stock in</a></li>
                 <li><a href="holdings.php">View Holdings</a></li>
                 <li><a href="outOfStock.php">Out of Stock</a></li>
                 <li><a href="agingDisposal.php">Aging Books/For Disposal</a></li>

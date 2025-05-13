@@ -10,7 +10,6 @@ if (isset($_GET['delete'])) {
     header("Location: borrower.php");
     exit;
 }
-ASASAS
 
 include('header.php');
 include('navbar.php');

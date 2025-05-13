@@ -355,3 +355,8 @@ th {
     color: red;
     margin-right: 5px;
 }
+.low-stock {
+    background-color: #ffe6e6; /* Light red background for low stock */
+    color: #d9534f; /* Red text for better visibility */
+    font-weight: bold; /* Make the text bold */
+}
