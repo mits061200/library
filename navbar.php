@@ -12,6 +12,12 @@
 <nav>
     <ul>
         <li class="dropdown">
+            <a href="dashBoard.php">
+                 <i class="fas fa-tachometer-alt"></i> 
+                <span class="nav-item">Dashboard</span>
+            </a>
+        </li>
+        <li class="dropdown">
             <a href="#" class="dropdown-toggle">
                 <i class="fas fa-folder"></i>
                 <span class="nav-item">File</span>
