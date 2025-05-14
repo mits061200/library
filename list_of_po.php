@@ -19,13 +19,13 @@ $result = $conn->query($query);
 <body>
     <div class="container">
 
-                 <!-- Header Tabs -->
-                <div class="tab-buttons">
-                    <button class="tab-btn" onclick="window.location.href='add_po.php'">Purchase Order</button>
-                    <span class="arrow">&gt;</span>
-                    <button class="tab-btn active">List of PO</button>
+        <!-- Header Tabs -->
+        <div class="tab-buttons">
+            <button class="tab-btn" onclick="window.location.href='add_po.php'">Purchase Order</button>
+            <span class="arrow">&gt;</span>
+            <button class="tab-btn active">List of PO</button>
                     
-                </div>
+        </div>
         <h2>Purchase Orders</h2>
         <table>
             <thead>

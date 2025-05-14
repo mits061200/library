@@ -12,16 +12,15 @@ if ($_SESSION['position'] !== 'librarian') {
     exit();
 }
 
-
 include 'header.php'; 
 include 'navbar.php'; 
-include 'db.php'; 
+include 'db.php';
 
 $edit_mode = false;
 $edit_personnel = [];
 $search_term = '';
 
-// Handle search functionality  
+// Handle search functionality
 if (isset($_GET['search'])) {
     $search_term = trim($_GET['search']);
 }
@@ -33,6 +32,11 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['add_personnel'])) {
     $middle_name = trim($_POST['middle_name']);
     $last_name = trim($_POST['last_name']);
     $position = trim($_POST['position']);
+    // In the update personnel section
+        if ($position === 'librarian' && $_SESSION['position'] !== 'librarian') {
+            echo "<script>alert('Only librarians can assign librarian positions.');</script>";
+            exit;
+        }
     $address = trim($_POST['address']);
     $phone_number = trim($_POST['phone_number']);
     
@@ -68,18 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['add_personnel'])) {
         echo "<script>alert('Password must include at least one special character (e.g., !, @, #, $, etc.).');</script>";
         exit;
     }
-
-        // In the add personnel section
-    if ($position === 'librarian' && $_SESSION['position'] !== 'librarian') {
-        echo "<script>alert('Only librarians can create librarian accounts.');</script>";
-        exit;
-    }
-
-    // In the update personnel section
-    if ($position === 'librarian' && $_SESSION['position'] !== 'librarian') {
-        echo "<script>alert('Only librarians can assign librarian positions.');</script>";
-        exit;
-    }
+    
 
     // Hash the password after validation
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
@@ -167,6 +160,12 @@ if ($_SERVER['REQUEST_METHOD'] == "POST" && isset($_POST['update_personnel'])) {
     $middle_name = trim($_POST['middle_name']);
     $last_name = trim($_POST['last_name']);
     $position = trim($_POST['position']);
+
+    //  validation check
+    if ($position === 'librarian' && $_SESSION['position'] !== 'librarian') {
+        echo "<script>alert('Only librarians can assign librarian positions.'); window.location='personnel.php';</script>";
+        exit;
+    }
     $address = trim($_POST['address']);
     $phone_number = trim($_POST['phone_number']);
     
@@ -286,12 +285,9 @@ $result = $stmt->get_result();
                            value="<?= $edit_mode ? htmlspecialchars($edit_personnel['LastName']) : '' ?>" required>
 
                     <label>Position:</label>
-                    <select name="position" class="last-name-input" required>
-                        <option value="">Select Position</option>
-                        <option value="librarian" <?= ($edit_mode && $edit_personnel['Position'] === 'librarian') ? 'selected' : '' ?>>Librarian</option>
-                        <option value="assistant" <?= ($edit_mode && $edit_personnel['Position'] === 'assistant') ? 'selected' : '' ?>>Assistant</option>
-                        <option value="staff" <?= ($edit_mode && $edit_personnel['Position'] === 'staff') ? 'selected' : '' ?>>Staff</option>
-                    </select>
+                    <input type="text" name="position" class="last-name-input" 
+                           placeholder="Enter Position" 
+                           value="<?= $edit_mode ? htmlspecialchars($edit_personnel['Position']) : '' ?>" required>
 
                     <label>Address:</label>
                     <input type="text" name="address" class="last-name-input" 

@@ -4,7 +4,7 @@ include 'db.php';
 
 // Check if user is already logged in
 if(isset($_SESSION['personnelid'])) {
-    header("Location: " . ($_SESSION['position'] === 'librarian' ? 'dashboard.php' : 'dashboard.php.php'));
+    header("Location: " . ($_SESSION['position'] === 'librarian' ? 'dashboard.php' : 'dashboard.php'));
     exit();
 }
 
@@ -50,7 +50,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                 $update_stmt->execute();
                 
                 // Redirect based on position
-                header("Location: " . ($user['Position'] === 'librarian' ? 'dashboard.php' : 'staff-dashboard.php'));
+                header("Location: " . ($user['Position'] === 'librarian' ? 'dashboard.php' : 'dashboard.php'));
                 exit();
             } else {
                 $error = 'Invalid username or password';
