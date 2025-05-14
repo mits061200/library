@@ -54,6 +54,7 @@ $result = $conn->query($query);
                     <?php endwhile; ?>
                 <?php else: ?>
                     <tr><td colspan="6" style="text-align:center;">No purchase orders found</td></tr>
+        
                 <?php endif; ?>
             </tbody>
         </table>

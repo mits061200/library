@@ -68,9 +68,38 @@ $stmt->close();
         .bold {
             font-weight: bold;
         }
+        .button-container {
+            width: 210mm;
+            margin: 0 auto 20px auto;
+            text-align: left;
+        }
+        .cancel-btn {
+            padding: 10px 20px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .print-btn {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        @media print {
+            .button-container {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
+ 
+
     <div class="container">
         <div class="header">PACIFIC SOUTHBAY COLLEGE, INC</div>
         <div class="sub-header">
@@ -135,5 +164,20 @@ $stmt->close();
             </tr>
         </table>
     </div>
+
+       <div class="button-container">
+        <button class="cancel-btn" onclick="window.location.href='../list_of_po.php'">Back to List</button>
+        <button class="print-btn" onclick="window.print()">Print</button>
+    </div>
+
+    <script>
+        // If user needs to close immediately when cancel is clicked
+        document.querySelector('.cancel-btn').addEventListener('click', function() {
+            // If opened in a new tab/window
+            if(window.opener) {
+                window.close();
+            }
+        });
+    </script>
 </body>
 </html>

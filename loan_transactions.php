@@ -1,7 +1,8 @@
 <?php
+// Start output buffering at the very top
+ob_start();
 session_start();
 
-include 'header.php';
 ?>
 <link rel="stylesheet" href="css/loan_transactions.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
@@ -666,6 +667,61 @@ if (isset($_POST['penalty_status']) && isset($_POST['transaction_id'])) {
     exit();
 }
 
+// Handle deletion of return record
+if (isset($_POST['delete_transaction'])) {
+    $transaction_id = $conn->real_escape_string($_POST['delete_transaction']);
+    
+    // First, check if there are any associated penalty transactions
+    $penalty_check = "SELECT * FROM penaltytransaction WHERE LoanID = '$transaction_id'";
+    $penalty_result = $conn->query($penalty_check);
+    
+    if ($penalty_result && $penalty_result->num_rows > 0) {
+        $error_message = "Cannot delete this return record because it has associated penalty transactions.";
+    } else {
+        // Get the book ID to update the copies count
+        $book_query = "SELECT BookID FROM loan WHERE TransactionID = '$transaction_id'";
+        $book_result = $conn->query($book_query);
+        
+        if ($book_result && $book_result->num_rows > 0) {
+            $book_data = $book_result->fetch_assoc();
+            $book_id = $book_data['BookID'];
+            
+            // Start transaction
+            $conn->begin_transaction();
+            
+            try {
+                // Delete the loan record
+                $delete_sql = "DELETE FROM loan WHERE TransactionID = '$transaction_id'";
+                if (!$conn->query($delete_sql)) {
+                    throw new Exception("Error deleting loan record: " . $conn->error);
+                }
+                
+                // Decrement the book copies count
+                $update_sql = "UPDATE book SET TotalCopies = TotalCopies - 1 WHERE BookID = '$book_id'";
+                if (!$conn->query($update_sql)) {
+                    throw new Exception("Error updating book copies: " . $conn->error);
+                }
+                
+                // Commit transaction
+                $conn->commit();
+                $success_message = "Return record deleted successfully!";
+                
+                // Refresh the page to show updated data
+                header("Location: loan_transactions.php?view=$view_borrower_id");
+                exit();
+            } catch (Exception $e) {
+                $conn->rollback();
+                $error_message = $e->getMessage();
+            }
+        } else {
+            $error_message = "Could not find the associated book for this transaction.";
+        }
+    }
+}
+
+
+
+include 'header.php';
 
 ?>
 
@@ -1033,6 +1089,7 @@ if (isset($_POST['penalty_status']) && isset($_POST['transaction_id'])) {
                                                 <th>Date Returned</th>
                                                 <th>Duration</th>
                                                 <th>Penalty Paid</th>
+                                                <th>Actions</th> <!-- Added Actions column -->
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1059,6 +1116,14 @@ if (isset($_POST['penalty_status']) && isset($_POST['transaction_id'])) {
                                                     <?php else: ?>
                                                         <span class="status-badge status-no-penalty">No Penalty</span>
                                                     <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <form method="POST" action="" style="display:inline;">
+                                                        <input type="hidden" name="delete_transaction" value="<?php echo $book['transaction_id']; ?>">
+                                                        <button type="submit" class="delete-btn" onclick="return confirm('Are you sure you want to delete this return record?');">
+                                                            <i class="fas fa-trash"></i> Delete
+                                                        </button>
+                                                    </form>
                                                 </td>
                                             </tr>
                                             <?php endforeach; ?>
@@ -1354,4 +1419,5 @@ function printInvoice() {
 <?php
 // Close database connection
 $conn->close();
+ob_end_flush();
 ?>

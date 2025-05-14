@@ -220,9 +220,9 @@ $conn->close();
                         <i class="fas fa-money-bill-wave"></i>
                     </div>
                     <div class="card-info">
-                        <h3>₱<?php echo number_format($stats['collection_value'], 2); ?></h3>
-                        <p>Collection Value</p>
-                        <small><?php echo $stats['recent_acquisitions']; ?> new titles</small>
+                        <h3>₱<?php  ?></h3>
+                        <p></p>
+                        <small><?php ?> new titles</small>
                     </div>
                 </div>
             </a>
