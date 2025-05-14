@@ -31,7 +31,7 @@ $result = $conn->query($query);
             <thead>
                 <tr>
                     <th>PO ID</th>
-                    <th>Supplier</th>
+                    <th>Institution Name</th>
                     <th>Project Name</th>
                     <th>PO Date</th>
                     <th>Total Amount</th>
