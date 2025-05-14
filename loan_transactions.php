@@ -1141,7 +1141,7 @@ if (isset($_POST['penalty_status']) && isset($_POST['transaction_id'])) {
                                         </button>
                                     </form>
                                 </div>
-                                wewewqewewe
+                           
                                 
                                 <!-- Invoice Modal -->
                                 <div id="invoiceModal" class="modal" style="display:none;">

@@ -59,6 +59,7 @@ input:focus, select:focus, textarea:focus {
     box-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
 }
 
+
 /* Table Styles */
 table {
     width: 100%;
@@ -118,6 +119,67 @@ td {
 .remove-item-btn:hover {
     background-color: #a71d2a;
 }
+
+/* Header Tabs Styles */
+
+
+.container .tab-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 0 5px;
+    color: #495057;
+}
+
+.tab-btn:hover {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+}
+
+.tab-btn.active {
+    background-color: #888; /* Fixed missing # */
+    color: black; /* Changed to white for better contrast */
+    border-color: #6c757d; /* Matching border color */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Optional: adds depth */
+}
+
+.arrow {
+    color: #6c757d;
+    font-weight: bold;
+    font-size: 16px;
+    margin: 0 10px;
+}
+
+/* Responsive adjustments for tabs */
+@media (max-width: 768px) {
+    .tab-buttons {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .tab-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+        margin: 5px;
+    }
+    
+    .arrow {
+        display: none;
+    }
+}
+
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {

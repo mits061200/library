@@ -12,6 +12,13 @@ include('navbar.php'); // Include the sidebar
 </head>
 <body>
     <div class="container">
+        <!-- Header Tabs -->
+                <div class="tab-buttons">
+                    <button class="tab-btn active">Purchase Order</button>
+                    <span class="arrow">&gt;</span>
+                    <button class="tab-btn" onclick="window.location.href='list_of_po.php'">List of PO</button>
+                </div>
+
         <div class="header">Add New Purchase Order</div>
         <form action="save_po.php" method="POST">
             <!-- Institution Details -->

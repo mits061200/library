@@ -18,6 +18,14 @@ $result = $conn->query($query);
 </head>
 <body>
     <div class="container">
+
+                 <!-- Header Tabs -->
+                <div class="tab-buttons">
+                    <button class="tab-btn" onclick="window.location.href='add_po.php'">Purchase Order</button>
+                    <span class="arrow">&gt;</span>
+                    <button class="tab-btn active">List of PO</button>
+                    
+                </div>
         <h2>Purchase Orders</h2>
         <table>
             <thead>

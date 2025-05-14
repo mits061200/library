@@ -316,7 +316,6 @@ if (isset($_POST['remove_book']) && isset($_POST['remove_index'])) {
 }
 
 // Process loan submission
-// Process loan submission
 if (isset($_POST['submit_loan']) && !empty($selected_books) && !empty($borrower_data)) {
     if ($valid_personnel_id === null) {
         $error_message = "No valid personnel found in the system.";
