@@ -64,6 +64,7 @@
             <ul class="dropdown-content">
                 <li><a href="add_po.php">Purchase Order</a></li>
                 <li><a href="stocks.php">Stock in</a></li>
+                <li><a href="storage.php">Storage Inventory</a></li>
                 <li><a href="holdings.php">View Holdings</a></li>
                 <li><a href="outOfStock.php">Out of Stock</a></li>
                 <li><a href="agingDisposal.php">Aging Books/For Disposal</a></li>

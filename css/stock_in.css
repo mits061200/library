@@ -1,0 +1,414 @@
+/* General Layout */
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f9f9f9;
+    margin: 0;
+    padding: 0;
+}
+
+.content {
+    margin-top: 3%;
+}
+
+/* Headings */
+h2 {
+    background-color: #ccc;
+    font-size: 25px;
+    font-weight: bold;
+    padding: 10px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Filter Form */
+.filter-form {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 5px;
+    flex-wrap: nowrap;
+    align-items: center;
+    width: 100%;
+    margin-left: 15px;
+    margin-top: 20px;
+}
+
+.filter-form input,
+.filter-form select,
+.filter-form button {
+    padding: 8px;
+    font-size: 14px;
+    min-width: 0;
+    flex: 1;
+    margin: 0;
+}
+
+.filter-form input[name="search"] {
+    flex: 2;
+}
+
+@media (max-width: 768px) {
+    .filter-form {
+        flex-wrap: wrap;
+    }
+}
+
+/* Input Form Layout */
+.input-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.input-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+}
+
+label {
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 14px;
+    margin-left: 60px;
+}
+
+input, select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    box-sizing: border-box;
+    width: 350px;
+    margin-left: 100px;
+}
+
+/* Form Container */
+.form-container {
+    margin-top: 30px;
+    width: 100%;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Buttons */
+.add-btn, .cancel-btn, .search-btn {
+    background-color: red;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.add-btn:hover, .cancel-btn:hover, .search-btn:hover {
+    background-color: #5a6268;
+}
+
+.add-btn {
+    display: flex;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.cancel-btn {
+    display: inline-block;
+    text-decoration: none;
+}
+
+/* Button Grouping */
+.button-group {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.button-group .add-btn,
+.button-group .cancel-btn {
+    margin: 0;
+}
+
+/* Search Container */
+.search-container {
+    display: flex;
+    align-items: center;
+    width: 600px;
+    margin-top: -40px;
+}
+
+.search-input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 14px;
+}
+
+/* Table Styles */
+.table-container {
+    border: 1px solid #ccc;
+    margin-top: 5px;
+    overflow-x: auto;
+}
+
+.table-container table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-container th,
+.table-container td {
+    padding: 10px;
+    border: 1px solid #ccc;
+    text-align: center;
+}
+
+th {
+    background-color: #ddd;
+}
+
+/* Action Buttons */
+.view, .edit, .delete {
+    display: inline-block;
+    margin: 0 5px;
+    background: none;
+    border: none;
+    color: red;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.view i, .edit i, .delete i {
+    color: red;
+    margin-right: 5px;
+}
+
+.view:hover, .edit:hover, .delete:hover {
+    text-decoration: underline;
+}
+
+/* Low Stock Highlighting */
+.low-stock {
+    background-color: #ffe6e6;
+    color: #d9534f;
+    font-weight: bold;
+}
+
+/* Modal Styling */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 800px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-radius: 5px;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: black;
+}
+
+/* Book Details in Modal */
+#bookDetails {
+    margin-top: 20px;
+}
+
+.book-detail-row {
+    display: flex;
+    border-bottom: 1px solid #eee;
+    padding: 10px 0;
+}
+
+.book-detail-label {
+    flex: 1;
+    font-weight: bold;
+    color: #555;
+}
+
+.book-detail-value {
+    flex: 2;
+}
+
+@media (max-width: 768px) {
+    .book-detail-row {
+        flex-direction: column;
+    }
+
+    .book-detail-label, .book-detail-value {
+        width: 100%;
+    }
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.pagination-link {
+    display: inline-block;
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    color: black;
+    text-decoration: none;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.pagination-link:hover {
+    background-color: #e9ecef;
+    color: red;
+}
+
+.pagination-link.active {
+    background-color: red;
+    color: white;
+    border-color: red;
+}
+
+.pagination-link.disabled {
+    color: #6c757d;
+    pointer-events: none;
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.page-info {
+    margin-left: 15px;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .form-container {
+        width: 95%;
+    }
+
+    .input-row {
+        flex-direction: column;
+    }
+
+    .pagination {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .page-info {
+        margin: 10px 0 0 0;
+    }
+
+    input, select {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    label {
+        margin-left: 0;
+    }
+
+    .search-container {
+        flex-direction: column;
+        width: 100%;
+    }
+}
+
+.add-stock-form .form-group,
+.donate-form .form-group {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Reduced space between elements */
+    margin-bottom: 12px;
+}
+
+.add-stock-form label,
+.donate-form label {
+    min-width: 160px;         /* Wider for better alignment */
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 0;
+}
+
+.add-stock-form select,
+.donate-form input[type="text"],
+.donate-form input[type="number"] {
+    flex: 1 1 0;
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid #bbb;
+    font-size: 1rem;
+    max-width: 250px;
+}
+
+.add-stock-form .donate-btn,
+.donate-form .donate-btn {
+    background: red;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 18px;
+    width: auto;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+.add-stock-form .donate-btn:hover,
+.donate-form .donate-btn:hover {
+    background: #b30000;
+}
+
+.donate-form .form-group {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between Book Title, Quantity, and Button */
+    margin-bottom: 12px;
+}
+
+.donate-form .input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0; /* No gap between label and input */
+}
+
+.donate-form .input-wrap label {
+    min-width: unset;
+    margin-right: 0;
+}

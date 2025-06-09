@@ -111,7 +111,7 @@ $stmt->close();
         <!-- Supplier and PO Details -->
         <table>
             <tr>
-                <td colspan="3"><strong>Purchase Order:</strong></td>
+                <td colspan="3"><strong>Purchase Order:</strong><?= htmlspecialchars($po['PurchaseOrderID']) ?></td>
                 <td colspan="3"><strong>Date:</strong> <?= htmlspecialchars($po['PurchaseOrderDate']) ?></td>
             </tr>
         </table>

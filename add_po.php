@@ -1,6 +1,9 @@
 <?php
 include('header.php'); // Include the header
 include('navbar.php'); // Include the sidebar
+include('db.php');
+
+$suppliers_result = $conn->query("SELECT SupplierID, Name FROM suppliers");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -22,6 +25,18 @@ include('navbar.php'); // Include the sidebar
         <div class="header">Add New Purchase Order</div>
         <form action="save_po.php" method="POST">
             <!-- Institution Details -->
+        <div class="form-group">
+            <label for="supplier_id">Supplier:</label>
+            <select id="supplier_id" name="supplier_id" required>
+                <option value="">Select Supplier</option>
+                <?php while ($supplier = $suppliers_result->fetch_assoc()): ?>
+                    <option value="<?= $supplier['SupplierID'] ?>"
+                        <?= (isset($_POST['supplier_id']) && $_POST['supplier_id'] == $supplier['SupplierID']) ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($supplier['Name']) ?>
+                    </option>
+                <?php endwhile; ?>
+            </select>
+        </div>
             <div class="form-group">
                 <label for="institution_name">Institution Name:</label>
                 <input type="text" id="institution_name" name="institution_name" value="PACIFIC SOUTHBAY COLLEGE, INC" required>
