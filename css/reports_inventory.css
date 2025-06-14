@@ -208,7 +208,7 @@ h2 {
 @media print {
     @page {
         size: A4 portrait;
-        margin: 20mm 15mm 20mm 15mm; /* Top, Right, Bottom, Left */
+        margin: 4mm 15mm 20mm 15mm;
     }
     body * {
         visibility: hidden !important;
@@ -217,14 +217,13 @@ h2 {
         visibility: visible !important;
     }
     .report-container {
-        position: absolute !important;
-        left: 0; top: 0; width: 100% !important;
         background: #fff !important;
         box-shadow: none !important;
         padding: 0 !important;
         margin: 0 !important;
+        width: 100% !important;
+       
     }
-    /* Hide filter/search forms, tab navigation, and buttons */
     .filter-form,
     .tab-buttons,
     .tab-buttons1,
@@ -242,19 +241,17 @@ h2 {
     footer {
         display: none !important;
     }
-    /* Remove table box-shadow and border-radius for print clarity */
-    .po-table,
-    .po-items-table {
+    .po-table {
         box-shadow: none !important;
         border-radius: 0 !important;
         page-break-inside: auto;
     }
-    /* Ensure tables don't break mid-row */
-    .po-table tr, .po-items-table tr {
+    .po-table tr {
         page-break-inside: avoid;
         page-break-after: auto;
     }
 }
+
 
 /* Responsive */
 @media (max-width: 900px) {

@@ -59,7 +59,7 @@ function get_po_items($conn, $po_id) {
     <div class="tab-buttons1">
         <button class="tab-btn active">Purchased order</button>
         <span class="arrow1">&gt;</span>
-        <button class="tab-btn" onclick="window.location.href='reports_holdings.php'">Holdings</button>
+        <button class="tab-btn" onclick="window.location.href='reports_inventoryHoldings.php'">Holdings</button>
     </div>
 
     <!-- Filter Form -->

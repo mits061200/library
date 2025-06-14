@@ -77,7 +77,7 @@
             </a>
             <ul class="dropdown-content">
                 <li><a href="reports_inventory.php">Inventory</a></li>
-                <li><a href="loansReturns.php">Loans/Returns</a></li>
+                <li><a href="reports_loans.php">Loans/Returns</a></li>
                 <li><a href="classifications.php">Classification</a></li>
                 <li><a href="lists.php">Lists</a></li>
                 <li><a href="penalizedBorroers.php">Penalized Borrowers</a></li>
