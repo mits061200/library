@@ -3,6 +3,22 @@ include('header.php');
 include('navbar.php');
 include('db.php');
 
+// Filter logic
+$where = [];
+if (!empty($_GET['search'])) {
+    $search = $conn->real_escape_string($_GET['search']);
+    $where[] = "(po.PurchaseOrderID LIKE '%$search%' OR s.Name LIKE '%$search%' OR po.ProjectName LIKE '%$search%')";
+}
+if (!empty($_GET['date'])) {
+    $date = $conn->real_escape_string($_GET['date']);
+    $where[] = "DATE(po.PurchaseOrderDate) = '$date'";
+}
+if (!empty($_GET['month'])) {
+    $month = $conn->real_escape_string($_GET['month']);
+    $where[] = "DATE_FORMAT(po.PurchaseOrderDate, '%Y-%m') = '$month'";
+}
+$where_sql = $where ? "WHERE " . implode(" AND ", $where) : "";
+
 // Fetch all purchase orders with supplier and total amount
 $sql = "
     SELECT 
@@ -14,6 +30,7 @@ $sql = "
         po.Purpose
     FROM purchase_orders po
     LEFT JOIN suppliers s ON po.SupplierID = s.SupplierID
+    $where_sql
     ORDER BY po.PurchaseOrderDate DESC
 ";
 $result = $conn->query($sql);
@@ -39,11 +56,32 @@ function get_po_items($conn, $po_id) {
 
 <div class="report-container">
     <h2>Purchase Order Reports</h2>
-    <div class="tab-buttons">
+    <div class="tab-buttons1">
         <button class="tab-btn active">Purchased order</button>
         <span class="arrow1">&gt;</span>
         <button class="tab-btn" onclick="window.location.href='reports_holdings.php'">Holdings</button>
     </div>
+
+    <!-- Filter Form -->
+    <form method="get" class="filter-form" style="margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center;">
+        <input type="text" name="search" placeholder="Search PO #, Supplier, Project..." value="<?= isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '' ?>" style="padding:8px 14px; border-radius:20px; border:1.5px solid #bbb; min-width:220px;">
+        
+        <label for="date" style="font-weight:500;">By Date:</label>
+        <input type="date" name="date" id="date" value="<?= isset($_GET['date']) ? htmlspecialchars($_GET['date']) : '' ?>" style="padding:8px 14px; border-radius:20px; border:1.5px solid #bbb;">
+        
+        <label for="month" style="font-weight:500;">By Month:</label>
+        <input type="month" name="month" id="month" value="<?= isset($_GET['month']) ? htmlspecialchars($_GET['month']) : '' ?>" style="padding:8px 14px; border-radius:20px; border:1.5px solid #bbb;">
+        
+        <button type="submit" class="tab-btn active" style="padding:8px 24px; border-radius:20px; border:none; background:#e53935; color:#fff; font-weight:600;">Search</button>
+        <?php if (!empty($_GET['search']) || !empty($_GET['date']) || !empty($_GET['month'])): ?>
+            <a href="reports_inventory.php" class="clear-btn">Clear</a>
+        <?php endif; ?>
+    </form>
+
+    <button type="button" onclick="window.print()" class="print-btn" style="background:#e53935;color:#fff;border:none;padding:8px 24px;font-size:1rem;font-weight:600;cursor:pointer;border-radius:0;margin-bottom:18px;">
+        Print
+    </button>
+
     <table class="po-table">
         <thead>
             <tr>

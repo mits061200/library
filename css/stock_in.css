@@ -30,36 +30,87 @@ h4 {
     text-align: center;
 }
 
-/* Filter Form */
+/* Filter Form - Rectangle, Red and White Theme (like book.php but rectangle) */
 .filter-form {
-    margin-bottom: 20px;
     display: flex;
-    gap: 5px;
-    flex-wrap: nowrap;
     align-items: center;
-    width: 100%;
-    margin-left: 15px;
-    margin-top: 20px;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 22px;
+    background: #fff;
+    padding: 14px 18px;
+    border-radius: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    border: 1.5px solid #e0e0e0;
 }
 
-.filter-form input,
-.filter-form select,
-.filter-form button {
-    padding: 8px;
-    font-size: 14px;
-    min-width: 0;
-    flex: 1;
-    margin: 0;
+.filter-form label {
+    font-weight: 500;
+    color: #222;
+    margin-right: 2px;
 }
 
-.filter-form input[name="search"] {
-    flex: 2;
+.filter-form input[type="text"],
+.filter-form input[type="date"],
+.filter-form input[type="month"] {
+    padding: 8px 16px;
+    border-radius: 0; /* Rectangle */
+    border: 1.5px solid #e53935;
+    font-size: 1rem;
+    background: #fff;
+    outline: none;
+    transition: border 0.2s;
+    min-width: 170px;
+    color: #222;
 }
 
-@media (max-width: 768px) {
-    .filter-form {
-        flex-wrap: wrap;
-    }
+.filter-form input[type="text"]:focus,
+.filter-form input[type="date"]:focus,
+.filter-form input[type="month"]:focus {
+    border-color: #222;
+    background: #fff5f5;
+}
+
+.filter-form button[type="submit"] {
+    background-color: #e53935;
+    color: #fff;
+    padding: 8px 24px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 0; /* Rectangle */
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    min-width: 90px;
+}
+
+.filter-form button[type="submit"]:hover {
+    background: #222;
+    color: #fff;
+}
+
+.filter-form a.clear-btn {
+    display: inline-block;
+    background-color: #fff;
+    color: #e53935;
+    border: 1.5px solid #e53935;
+    border-radius: 0; /* Rectangle */
+    padding: 8px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    margin-left: 10px;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    min-width: 90px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.filter-form a.clear-btn:hover {
+    background: #222;
+    color: #fff;
+    border-color: #222;
 }
 
 /* Input Form Layout */
