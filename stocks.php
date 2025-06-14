@@ -10,18 +10,11 @@ $message = '';
 $message_type = '';
 
 // Handle delete from storage
-if (isset($_GET['delete'])) {
-    $id = intval($_GET['delete']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete'])) {
+    $id = intval($_POST['delete']);
     $conn->query("DELETE FROM storage WHERE StorageID = $id");
     $message = "Item deleted successfully.";
     $message_type = 'success';
-    header("Location: inventory.php?msg=" . urlencode($message) . "&type=success");
-    exit;
-}
-
-if (isset($_GET['msg'])) {
-    $message = $_GET['msg'];
-    $message_type = $_GET['type'] ?? '';
 }
 
 // Handle donation
@@ -52,11 +45,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['po_id'])) {
     while ($item = $items->fetch_assoc()) {
         $desc = $conn->real_escape_string($item['Description']);
         $qty = intval($item['Quantity']);
+        $remarks = "From purchased order";
         $check = $conn->query("SELECT * FROM storage WHERE ItemDescription = '$desc'");
         if ($check->num_rows > 0) {
-            $conn->query("UPDATE storage SET Quantity = Quantity + $qty WHERE ItemDescription = '$desc'");
+            $conn->query("UPDATE storage SET Quantity = Quantity + $qty, Remarks = '$remarks' WHERE ItemDescription = '$desc'");
         } else {
-            $conn->query("INSERT INTO storage (ItemDescription, Quantity) VALUES ('$desc', $qty)");
+            $conn->query("INSERT INTO storage (ItemDescription, Quantity, Remarks) VALUES ('$desc', $qty, '$remarks')");
         }
     }
     $message = "Stock added from PO #$po_id!";
@@ -82,13 +76,13 @@ $po_result = $conn->query("SELECT PurchaseOrderID, ProjectName, PurchaseOrderDat
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Stock In</title>
+    <title>Stocks In</title>
     <link rel="stylesheet" href="css/stock_in.css">
    
 </head>
 <body>
     <div class="content">
-        <h1>Stock In</h1>
+        <h1>Stocks</h1>
 
         <?php if ($message): ?>
             <div class="msg <?= $message_type ?>">
@@ -97,7 +91,7 @@ $po_result = $conn->query("SELECT PurchaseOrderID, ProjectName, PurchaseOrderDat
         <?php endif; ?>
 
         <!-- Book Stocks Section -->
-        <h2>Book Stocks</h2>
+        <h2>Library Book Stocks (Inside the Library)</h2>
         <div class="table-container">
             <table>
                 <thead>
@@ -132,7 +126,8 @@ $po_result = $conn->query("SELECT PurchaseOrderID, ProjectName, PurchaseOrderDat
 
      
 <!-- Storage Section -->
-<h2>Storage</h2>
+<h1>Stock In</h1>
+<h4>Storage Stocks (Outside the library)</h4>
 
 <!-- Add Stock from PO -->
 <form method="post" class="add-stock-form" style="margin-bottom: 32px; max-width:600px;">
@@ -152,7 +147,7 @@ $po_result = $conn->query("SELECT PurchaseOrderID, ProjectName, PurchaseOrderDat
 
 <!-- Donate a Book -->
 <form method="post" class="donate-form" style="margin-bottom: 32px; max-width:900px;">
-    <h3 style="margin-bottom:12px;">Donate a Book</h3>
+    <h3 style="margin-bottom:12px;">Donated Book:</h3>
     <div class="form-group">
         <div class="input-wrap">
             <label for="donate_title">Book Title:</label>
@@ -183,10 +178,10 @@ $po_result = $conn->query("SELECT PurchaseOrderID, ProjectName, PurchaseOrderDat
                 <td><?= htmlspecialchars($row['Remarks']) ?></td>
                 <td>
                     <a href="edit_storage.php?id=<?= $row['StorageID'] ?>" class="action-btn edit-btn">Edit</a>
-                    <form action="inventory.php" method="get" style="display:inline;">
-                        <input type="hidden" name="delete" value="<?= $row['StorageID'] ?>">
-                        <button type="submit" class="action-btn delete-btn" onclick="return confirm('Are you sure you want to delete this item?');">Delete</button>
-                    </form>
+                    <form action="stocks.php" method="post" style="display:inline;">
+    <input type="hidden" name="delete" value="<?= $row['StorageID'] ?>">
+    <button type="submit" class="action-btn delete-btn" onclick="return confirm('Are you sure you want to delete this item?');">Delete</button>
+</form>
                 </td>
             </tr>
             <?php endwhile; ?>
