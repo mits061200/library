@@ -1,0 +1,163 @@
+/* Uniform with other reports, considering navbar position */
+
+/* Adjust for fixed or sticky navbar if needed */
+
+.report-container {
+    max-width: 1200px;
+    margin: 40px auto 0 auto;
+  
+    padding: 32px 36px 36px 36px;
+    border-radius: 12px;
+   
+    min-height: 80vh;
+    margin-left: 270px;
+}
+h2 {
+    background-color: #ccc;
+    font-size: 25px;
+    font-weight:bold;
+    margin-top: -100px;
+    margin-bottom: 20px;
+}
+.report-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 22px;
+    color: #222;
+}
+
+/* --- Table Styles: Gray header like stocks.php --- */
+.po-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: #fff;
+    font-size: 15px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 32px;
+}
+
+.po-table th, .po-table td {
+    padding: 13px 16px;
+    border-bottom: 1px solid #e3e3e3;
+    text-align: left;
+}
+
+.po-table th {
+    background: #ededed;      /* Gray header */
+    color: #222;
+    font-weight: 700;
+    font-size: 1rem;
+    border-bottom: 2px solid #d1d1d1;
+    letter-spacing: 0.5px;
+}
+
+.po-table tr:last-child td {
+    border-bottom: none;
+}
+
+.po-table tr:nth-child(even) {
+    background: #f9f9f9;      /* Very light gray for zebra striping */
+}
+
+.po-table tr:hover {
+    background: #edbbac;      /* Subtle blue hover */
+    transition: background 0.2s;
+}
+
+/* PO Items Table - match style */
+.po-items-table {
+    width: 96%;
+    margin: 10px 0 20px 30px;
+    border-collapse: collapse;
+    font-size: 0.97rem;
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(33,150,243,0.04);
+}
+
+.po-items-table th, .po-items-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #e3e3e3;
+    text-align: left;
+}
+
+.po-items-table th {
+    background: #ededed;      /* Gray header */
+    color: #222;
+    font-weight: 600;
+}
+
+.po-items-table tr:last-child td {
+    border-bottom: none;
+}
+
+.po-items-table tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+.po-items-table tr:hover {
+    background: #f1b2a8;
+    transition: background 0.2s;
+}
+
+.purpose {
+    font-style: italic;
+    color: #444;
+    margin-bottom: 8px;
+}
+.tab-buttons {
+            display: flex;
+            align-items: center;
+            justify-content: center;   /* Center horizontally */
+            gap: 8px;
+            margin-bottom: 24px;
+            width: 100%;
+        }
+        .tab-btn {
+            background: #e53935;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+        .tab-btn:not(.active) {
+            background: #fff;
+            color: #e53935;
+            border: 1.5px solid #e53935;
+        }
+        .tab-btn.active {
+            background: #e53935;
+            color: #fff;
+        }
+        .tab-btn:hover:not(.active) {
+            background: #222;
+            color: #fff;
+            border-color: #222;
+        }
+        .arrow1 {
+            font-size: 1.3rem;
+            color: #e53935;
+            margin: 0 4px;
+            user-select: none;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .report-container {
+        padding: 10px 2vw;
+    }
+    .po-table, .po-items-table, th, td {
+        font-size: 0.97rem;
+    }
+    .po-items-table {
+        margin-left: 0;
+        width: 100%;
+    }
+}

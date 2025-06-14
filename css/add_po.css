@@ -120,46 +120,52 @@ td {
     background-color: #a71d2a;
 }
 
-/* Header Tabs Styles */
-
-
+/* Header Tabs Styles - Red, Black, and White Theme */
 .container .tab-buttons {
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 20px;
+    gap: 8px;
+    width: 100%;
 }
 
 .tab-btn {
-    padding: 8px 20px;
-    font-size: 14px;
+    background: #e53935;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 24px;
+    font-size: 1rem;
     font-weight: 600;
-    background-color: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: background 0.2s, color 0.2s;
     margin: 0 5px;
-    color: #495057;
 }
 
-.tab-btn:hover {
-    background-color: #e9ecef;
-    border-color: #ced4da;
+.tab-btn:not(.active) {
+    background: #fff;
+    color: #e53935;
+    border: 1.5px solid #e53935;
 }
 
 .tab-btn.active {
-    background-color: #888; /* Fixed missing # */
-    color: black; /* Changed to white for better contrast */
-    border-color: #6c757d; /* Matching border color */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Optional: adds depth */
+    background: #e53935;
+    color: #fff;
+}
+
+.tab-btn:hover:not(.active) {
+    background: #222;
+    color: #fff;
+    border-color: #222;
 }
 
 .arrow {
-    color: #6c757d;
+    color: #e53935;
     font-weight: bold;
-    font-size: 16px;
+    font-size: 1.3rem;
     margin: 0 10px;
+    user-select: none;
 }
 
 /* Responsive adjustments for tabs */
@@ -168,13 +174,11 @@ td {
         flex-wrap: wrap;
         justify-content: center;
     }
-    
     .tab-btn {
         padding: 6px 12px;
         font-size: 12px;
         margin: 5px;
     }
-    
     .arrow {
         display: none;
     }

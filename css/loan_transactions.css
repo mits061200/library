@@ -22,36 +22,47 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 20px;
+    gap: 8px;
+    margin-bottom: 24px;
+    width: 100%;
 }
 
 .loan-section .tab-btn {
-    background-color: white;
-    border: 1px solid #ccc;
-    padding: 10px 25px;
-    font-weight: bold;
+    background: #e53935;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 24px;
+    font-size: 1rem;
+    font-weight: 600;
     cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.loan-section .tab-btn:not(.active) {
+    background: #fff;
+    color: #e53935;
+    border: 1.5px solid #e53935;
 }
 
 .loan-section .tab-btn.active {
-    background-color: #ccc;
+    background: #e53935;
+    color: #fff;
+}
+
+.loan-section .tab-btn:hover:not(.active) {
+    background: #222;
+    color: #fff;
+    border-color: #222;
 }
 
 .loan-section .arrow {
-    margin: 0 10px;
-    font-weight: bold;
-    font-size: 20px;
+    font-size: 1.3rem;
+    color: #e53935;
+    margin: 0 4px;
+    user-select: none;
 }
-
-/* Section Titles */
-.loan-section .section-title {
-    font-size: 18px;
-    font-weight: bold;
-    margin: 20px 0 10px;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 8px;
-    color: #333;
-}
+s
 
 /* Filter Section */
 .filter-section {
