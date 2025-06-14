@@ -85,8 +85,9 @@ $po_result = $conn->query("SELECT PurchaseOrderID, ProjectName, PurchaseOrderDat
         <h1>Stocks</h1>
 
         <?php if ($message): ?>
-            <div class="msg <?= $message_type ?>">
+            <div class="popup-msg <?= $message_type ?>" id="popupMsg">
                 <?= htmlspecialchars($message) ?>
+                <span class="popup-close" onclick="document.getElementById('popupMsg').style.display='none';">&times;</span>
             </div>
         <?php endif; ?>
 
@@ -188,5 +189,15 @@ $po_result = $conn->query("SELECT PurchaseOrderID, ProjectName, PurchaseOrderDat
         </tbody>
     </table>
 </div>
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+    var popup = document.getElementById('popupMsg');
+    if (popup) {
+        setTimeout(function() {
+            popup.style.display = 'none';
+        }, 3000);
+    }
+});
+</script>
 </body>
 </html>

@@ -422,3 +422,42 @@ th {
     min-width: unset;
     margin-right: 0;
 }
+
+
+.popup-msg {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 300px;
+    max-width: 90vw;
+    padding: 18px 48px 18px 20px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    z-index: 9999;
+    background: #fff;
+    color: #222;
+    border: 1.5px solid #bbb;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    text-align: left;
+    font-family: system-ui, Arial, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    animation: popup-fadein 0.3s;
+}
+.popup-msg.success { border-left: 6px solid #4caf50; }
+.popup-msg.error   { border-left: 6px solid #e53935; }
+.popup-close {
+    margin-left: 18px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #888;
+    cursor: pointer;
+    user-select: none;
+}
+@keyframes popup-fadein {
+    from { opacity: 0; top: 0; }
+    to   { opacity: 1; top: 60px; }
+}
+

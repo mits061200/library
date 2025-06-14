@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 04, 2025 at 09:09 AM
+-- Generation Time: Jun 14, 2025 at 07:21 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -42,7 +42,9 @@ INSERT INTO `authors` (`AuthorID`, `FirstName`, `MiddleName`, `LastName`) VALUES
 (18, 'kaye ann', 'revill', 'tuquib'),
 (25, 'Michelle', 'Sarmiento', 'Cebritas'),
 (26, 'mits', 'ererer', 'rererere'),
-(30, 'dfsdf', 'sdsd', 'wwe');
+(30, 'dfsdf', 'sdsd', 'wwe'),
+(31, 'ann', '', 'ref'),
+(32, 'Danilo', 'E.', 'Ponce');
 
 -- --------------------------------------------------------
 
@@ -71,20 +73,20 @@ CREATE TABLE `book` (
   `AccessionNumber` varchar(50) DEFAULT NULL,
   `Status` enum('Available','Unavailable') GENERATED ALWAYS AS (case when `TotalCopies` - `HoldCopies` > 0 then 'Available' else 'Unavailable' end) STORED,
   `CreatedAt` timestamp NOT NULL DEFAULT current_timestamp(),
-  `UpdatedAt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `UpdatedAt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `CanBorrow` tinyint(1) DEFAULT 1,
+  `MaxBorrow` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `book`
 --
 
-INSERT INTO `book` (`BookID`, `Title`, `ISBN`, `AuthorID`, `CategoryID`, `MaterialID`, `LocationID`, `MainClassificationID`, `SubClassificationID`, `CallNumber`, `TotalCopies`, `HoldCopies`, `AcquisitionDate`, `Price`, `Publisher`, `Edition`, `Year`, `AccessionNumber`, `CreatedAt`, `UpdatedAt`) VALUES
-(12, 'HCL', '32432424', 26, 14, 2, 6, 2, 2, '353535', 3, 1, '2025-04-26', 234.00, 'AVFS', '5', '2007', '32424', '2025-04-26 10:37:53', '2025-04-29 05:57:24'),
-(13, 'English', '33231421', 18, 14, 3, 4, 1, 1, '353535', 12, 5, '2025-04-26', 265.00, 'ass', '2', '2023', '432432423', '2025-04-26 14:14:23', '2025-04-29 05:56:56'),
-(14, 'Filipino', '4344', 25, 14, 2, 5, 2, 2, '24235421', 10, 3, '2025-04-29', 309.00, 'Book Prod.', '2', '2009', '2342342', '2025-04-29 05:55:01', '2025-04-29 05:57:35'),
-(15, 'The Hunger Games', '242424', 18, 1, 2, 3, 1, 1, '2421421', 3, 1, '2025-04-29', 20076.00, 'Book Prod.', '3', '2005', '4214', '2025-04-29 05:59:37', '2025-04-29 05:59:37'),
-(16, 'Harry Potter', '3131', 26, 1, 2, 3, 2, 4, '1321321', 2, 1, '2025-04-29', 409.00, 'AVFS', '3', '1997', '2442', '2025-04-29 06:01:00', '2025-04-29 06:01:00'),
-(17, 'To Kill a Mocking Bird', '2321323', 25, 1, 2, 4, 1, 1, '1232', 4, 2, '2025-04-29', 5465.00, 'ass', '1', '2003', '321324', '2025-04-29 06:03:10', '2025-04-29 06:03:10');
+INSERT INTO `book` (`BookID`, `Title`, `ISBN`, `AuthorID`, `CategoryID`, `MaterialID`, `LocationID`, `MainClassificationID`, `SubClassificationID`, `CallNumber`, `TotalCopies`, `HoldCopies`, `AcquisitionDate`, `Price`, `Publisher`, `Edition`, `Year`, `AccessionNumber`, `CreatedAt`, `UpdatedAt`, `CanBorrow`, `MaxBorrow`) VALUES
+(23, 'ROMEO', '231', 25, 3, 1, 1, 1, 1, '2421421', 11, 5, '2025-05-04', 499.00, 'Book Prod.', '1', '2023', '321324', '2025-05-04 09:46:47', '2025-05-15 15:05:56', 1, NULL),
+(24, 'Harry potter', '242424', 18, 1, 2, 1, 1, 1, '345', 7, 5, '2025-05-05', 500.00, 'Book Prod.', '3', '2025', '2135', '2025-05-04 16:21:35', '2025-05-14 13:24:16', 1, NULL),
+(25, 'Kill The Mocking Bird', '332324', 26, 1, 1, 5, 1, 1, '11213131', 13, 3, '2025-05-11', 322432.00, 'wrwrwrw', '3', '2009', '1313131', '2025-05-11 13:42:26', '2025-05-14 09:21:34', 1, NULL),
+(26, 'Noli', '13131', 26, 1, 4, 5, 2, 2, '3133', 10, 2, '2025-05-11', 234.00, 'Abc', '2', '2005', '13133', '2025-05-11 13:43:54', '2025-05-11 13:43:54', 1, NULL);
 
 -- --------------------------------------------------------
 
@@ -114,7 +116,8 @@ CREATE TABLE `borrowers` (
 INSERT INTO `borrowers` (`BorrowerID`, `FirstName`, `MiddleName`, `LastName`, `ContactNumber`, `Role`, `Level`, `Year`, `Course`, `GradeLevel`, `Strand`, `CreatedAt`) VALUES
 ('2111600005', 'Michelle', 'Sarmiento', 'Cebritas', '09077489667', 'Student', 'College', '4', 'BSIT', NULL, NULL, '2025-04-22 15:33:13'),
 ('234232', 'kaye', 'revilla', 'tuquib', '09836746534', 'Student', 'College', '4', 'BSIT', NULL, NULL, '2025-04-24 16:30:11'),
-('34532532532', 'Jayson', 'Sarmiento', 'Cebritas', '09847523564', 'Student', 'College', '3', 'BSMT', NULL, NULL, '2025-04-26 14:19:38');
+('34532532532', 'Jayson', 'Sarmiento', 'Cebritas', '09847523564', 'Student', 'College', '3', 'BSMT', NULL, NULL, '2025-04-26 14:19:38'),
+('21312', 'Ron', 'Oliver', 'Saladero', '09847523564', 'Student', 'College', '4', 'BSIT', NULL, NULL, '2025-05-04 08:10:02');
 
 -- --------------------------------------------------------
 
@@ -162,19 +165,14 @@ CREATE TABLE `loan` (
 --
 
 INSERT INTO `loan` (`TransactionID`, `BorrowerID`, `BookID`, `DateBorrowed`, `DueDate`, `DateReturned`, `PersonnelID`, `PenaltyID`, `Status`, `CreatedAt`) VALUES
-(28, '2111600005', 13, '2025-04-25', '2025-05-02', '2025-05-04', '0012-2097', 1, 'penalized', '2025-04-29 09:45:53'),
-(29, '234232', 16, '2025-04-29', '2025-05-06', NULL, '0012-2097', NULL, 'borrowed', '2025-04-29 10:15:41'),
-(30, '234232', 15, '2025-04-29', '2025-05-06', NULL, '0012-2097', NULL, 'borrowed', '2025-04-29 10:49:28'),
-(31, '234232', 13, '2025-04-29', '2025-05-02', '2025-04-30', '0012-2097', NULL, 'returned', '2025-04-29 10:53:27'),
-(32, '234232', 14, '2025-04-29', '2025-05-02', '2025-04-30', '0012-2097', NULL, 'returned', '2025-04-29 10:53:27'),
-(33, '2111600005', 14, '2025-04-29', '2025-05-02', '2025-05-04', '0012-2097', 1, 'penalized', '2025-04-29 11:18:28'),
-(34, '2111600005', 16, '2025-04-29', '2025-05-06', NULL, '0012-2097', NULL, 'borrowed', '2025-04-29 12:14:34'),
-(35, '2111600005', 17, '2025-04-29', '2025-05-06', NULL, '0012-2097', NULL, 'borrowed', '2025-04-29 12:35:05'),
-(36, '34532532532', 12, '2025-04-29', '2025-05-02', '2025-04-30', '0012-2097', NULL, 'returned', '2025-04-29 12:53:53'),
-(37, '34532532532', 13, '2025-04-29', '2025-05-02', '2025-04-30', '0012-2097', NULL, 'returned', '2025-04-29 12:54:36'),
-(38, '34532532532', 16, '2025-04-29', '2025-05-06', '2025-04-30', '0012-2097', NULL, 'returned', '2025-04-29 12:55:22'),
-(39, '34532532532', 17, '2025-04-29', '2025-05-06', '2025-04-30', '0012-2097', NULL, 'returned', '2025-04-29 12:55:22'),
-(40, '234232', 13, '2025-04-30', '2025-05-03', '2025-04-30', '0012-2097', NULL, 'returned', '2025-04-30 12:17:41');
+(75, '21312', 23, '2025-05-04', '2025-05-05', '2025-05-04', '0012-2097', NULL, 'returned', '2025-05-04 16:53:01'),
+(76, '21312', 23, '2025-05-06', '2025-05-07', '2025-05-11', '0012-2097', NULL, 'returned', '2025-05-06 06:54:09'),
+(77, '2111600005', 24, '2025-05-11', '2025-05-18', '2025-05-11', '0012-2097', NULL, 'returned', '2025-05-11 03:19:59'),
+(79, '2111600005', 24, '2025-05-11', '2025-05-18', '2025-05-11', '0012-2097', NULL, 'returned', '2025-05-11 04:29:07'),
+(81, '234232', 23, '2025-05-11', '2025-05-14', '2025-05-15', '0012-2097', NULL, 'penalized', '2025-05-11 06:40:48'),
+(82, '234232', 25, '2025-05-11', '2025-05-12', '2025-05-14', '0012-2097', NULL, 'returned', '2025-05-11 16:42:22'),
+(85, '21312', 24, '2025-05-11', '2025-05-11', NULL, '0012-2097', NULL, 'borrowed', '2025-05-11 17:09:44'),
+(86, '2111600005', 24, '2025-05-14', '2025-05-14', NULL, '0012-2097', NULL, 'borrowed', '2025-05-14 13:23:33');
 
 -- --------------------------------------------------------
 
@@ -218,7 +216,9 @@ CREATE TABLE `mainclassification` (
 INSERT INTO `mainclassification` (`MainClassificationID`, `ClassificationNumber`, `Description`) VALUES
 (1, '000', 'General Work'),
 (2, '010`', 'Bibliographies'),
-(4, 'sdszdsd', 'Dsdsd');
+(4, 'sdszdsd', 'Dsdsd'),
+(5, '350', 'Filipiana'),
+(6, '35464', 'fik');
 
 -- --------------------------------------------------------
 
@@ -261,8 +261,8 @@ CREATE TABLE `penalty` (
 --
 
 INSERT INTO `penalty` (`PenaltyID`, `PenaltyName`, `PenaltyRate`, `Duration`) VALUES
-(1, 'Overdue', 5.00, 3),
-(10, 'Overdue (Fiction)', 5.00, 7);
+(1, 'Overdue', 5.00, 0),
+(10, 'Overdue (Fiction)', 5.00, 0);
 
 -- --------------------------------------------------------
 
@@ -288,10 +288,9 @@ CREATE TABLE `penaltytransaction` (
 --
 
 INSERT INTO `penaltytransaction` (`PenaltyTransactionID`, `LoanID`, `PenaltyID`, `PenaltyAmount`, `PenaltyType`, `DateIssued`, `Remarks`, `Status`, `DatePaid`, `CreatedAt`) VALUES
-(3, 33, 1, 10.00, 'overdue', '2025-05-04', 'Days Overdue: 2', 'unpaid', NULL, '2025-05-04 06:44:09'),
-(4, 33, 1, 10.00, 'overdue', '2025-05-04', 'Days Overdue: 2', 'unpaid', NULL, '2025-05-04 06:44:13'),
-(5, 33, 1, 10.00, 'overdue', '2025-05-04', 'Days Overdue: 2', 'unpaid', NULL, '2025-05-04 06:50:24'),
-(6, 28, 1, 10.00, 'overdue', '2025-05-04', 'Days Overdue: 2', 'unpaid', NULL, '2025-05-04 06:50:24');
+(7, 76, 1, 20.00, 'overdue', '2025-05-11', 'Overdue by 4 days', 'paid', '2025-05-11', '2025-05-11 06:42:20'),
+(10, 82, 1, 10.00, 'overdue', '2025-05-14', 'Overdue by 2 days', 'paid', '2025-05-14', '2025-05-14 09:21:34'),
+(11, 81, 1, 5.00, 'overdue', '2025-05-15', 'Overdue by 1 days', 'unpaid', NULL, '2025-05-15 15:05:56');
 
 -- --------------------------------------------------------
 
@@ -315,7 +314,9 @@ CREATE TABLE `personnel` (
 --
 
 INSERT INTO `personnel` (`PersonnelID`, `FirstName`, `MiddleName`, `LastName`, `Position`, `Address`, `PhoneNumber`, `DateAdded`) VALUES
-('0012-2097', 'Michelle', 'Sarmiento', 'Cebritas', 'Librarian', 'Prk. 24, Nursery Road, Lagao, G.S.C.', '09109248412', '2025-04-19 14:09:01');
+('0012-2097', 'Michelle', 'Sarmiento', 'Cebritas', 'Librarian', 'Prk. 24, Nursery Road, Lagao, G.S.C.', '09109248412', '2025-04-19 14:09:01'),
+('345', 'Rose', 'Villa', 'Go', 'librarian', 'Prk. 18, Vicente, G.S.C', '098736524234', '2025-05-14 03:32:28'),
+('435', 'Kenneth', '', 'Fritz', 'assistant', 'Prk. 24, Lagao, G.S.C', '09876354256', '2025-05-14 03:34:50');
 
 -- --------------------------------------------------------
 
@@ -337,7 +338,91 @@ CREATE TABLE `personnellogin` (
 --
 
 INSERT INTO `personnellogin` (`LoginID`, `PersonnelID`, `Username`, `Password`, `LastLogin`, `Status`) VALUES
-(3, '0012-2097', 'mits', '$2y$10$Zij1AhbNj0I2d7acN8L.D.XDiQ0wHgHMKK119AQjYklfDH4aTC.5.', NULL, 'active');
+(3, '0012-2097', 'mits', '$2y$10$Zij1AhbNj0I2d7acN8L.D.XDiQ0wHgHMKK119AQjYklfDH4aTC.5.', NULL, 'active'),
+(5, '345', 'Rose', '$2y$10$Js.GNm6Lse24j5Ta5T6Hgu/pEoqMOTfPkvq219Gk8JzhSpKeVl3nu', '2025-05-15 16:02:40', 'active'),
+(6, '435', 'Ken', '$2y$10$Zjcuqw6.lYLPVh3FwYdXF.Xdy7j1Mdzi7JMlt5VIapHsO615LFBE2', '2025-05-14 04:02:08', 'active');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `purchase_orders`
+--
+
+CREATE TABLE `purchase_orders` (
+  `PurchaseOrderID` int(11) NOT NULL,
+  `SupplierID` int(11) NOT NULL,
+  `InstitutionName` varchar(255) NOT NULL,
+  `Address` text NOT NULL,
+  `ContactInfo` varchar(255) NOT NULL,
+  `ProjectName` varchar(255) NOT NULL,
+  `PurchaseOrderDate` date NOT NULL,
+  `Purpose` text NOT NULL,
+  `TotalAmount` decimal(10,2) NOT NULL,
+  `PreparedBy` varchar(255) NOT NULL,
+  `PreparedByPosition` varchar(255) NOT NULL,
+  `NotedBy` varchar(255) NOT NULL,
+  `NotedByPosition` varchar(255) NOT NULL,
+  `ApprovedBy` varchar(255) NOT NULL,
+  `ApprovedByPosition` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `purchase_orders`
+--
+
+INSERT INTO `purchase_orders` (`PurchaseOrderID`, `SupplierID`, `InstitutionName`, `Address`, `ContactInfo`, `ProjectName`, `PurchaseOrderDate`, `Purpose`, `TotalAmount`, `PreparedBy`, `PreparedByPosition`, `NotedBy`, `NotedByPosition`, `ApprovedBy`, `ApprovedByPosition`) VALUES
+(12, 1, 'PACIFIC SOUTHBAY COLLEGE, INC', 'PUROK CARMENVILLE BRGY. CALUMPANG, GENERAL SANTOS CITY', 'TEL. NO. 553-1450 MOBILE NO. 0946-713-6519', 'BOOKS TO PURCHASE', '2024-12-02', 'SOCIAL WORK PROGRAM.', 7682.00, 'GELYMAE V. ENERO', '0', 'KENNETH D. CLAUDIO, MBM', 'VP for Academics', 'DR. LEANDRO ADOR A. DIZON, CPA', 'School President'),
+(13, 1, 'PACIFIC SOUTHBAY COLLEGE, INC', 'PUROK CARMENVILLE BRGY. CALUMPANG, GENERAL SANTOS CITY', 'TEL. NO. 553-1450 MOBILE NO. 0946-713-6519', 'BOOKS TO PURCHASE', '2024-12-02', 'SOCIAL WORK PROGRAM.', 1242.00, 'GELYMAE V. ENERO', 'PSCI, Librarian', 'KENNETH D. CLAUDIO, MBM', 'VP for Academics', 'DR. LEANDRO ADOR A. DIZON, CPA', 'School President'),
+(14, 1, 'PACIFIC SOUTHBAY COLLEGE, INC', 'PUROK CARMENVILLE BRGY. CALUMPANG, GENERAL SANTOS CITY', 'TEL. NO. 553-1450 MOBILE NO. 0946-713-6519', 'BOOKS TO PURCHASE', '2024-12-02', 'SOCIAL WORK PROGRAM.', 100166.00, 'GELYMAE V. ENERO', 'PSCI, Librarian', 'KENNETH D. CLAUDIO, MBM', 'VP for Academics', 'DR. LEANDRO ADOR A. DIZON, CPA', 'School President'),
+(15, 1, 'PACIFIC SOUTHBAY COLLEGE, INC', 'PUROK CARMENVILLE BRGY. CALUMPANG, GENERAL SANTOS CITY', 'TEL. NO. 553-1450 MOBILE NO. 0946-713-6519', 'BOOKS TO PURCHASE', '2024-12-02', 'SOCIAL WORK PROGRAM.', 672.00, 'GELYMAE V. ENERO', 'PSCI, Librarian', 'KENNETH D. CLAUDIO, MBM', 'VP for Academics', 'DR. LEANDRO ADOR A. DIZON, CPA', 'School President');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `purchase_order_items`
+--
+
+CREATE TABLE `purchase_order_items` (
+  `ItemID` int(11) NOT NULL,
+  `PurchaseOrderID` int(11) NOT NULL,
+  `ItemNo` int(11) NOT NULL,
+  `Quantity` varchar(50) NOT NULL,
+  `Description` text NOT NULL,
+  `UnitPrice` decimal(10,2) NOT NULL,
+  `Amount` decimal(10,2) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `purchase_order_items`
+--
+
+INSERT INTO `purchase_order_items` (`ItemID`, `PurchaseOrderID`, `ItemNo`, `Quantity`, `Description`, `UnitPrice`, `Amount`) VALUES
+(12, 12, 1, '23', '2', 334.00, 7682.00),
+(13, 13, 1, '23', '45', 54.00, 1242.00),
+(14, 14, 22, '2334', 'BOKS', 32.00, 74688.00),
+(15, 14, 3234, '434', 'BOOKS', 43.00, 18662.00),
+(16, 14, 4343, '32', 'HEY', 213.00, 6816.00),
+(17, 15, 112, '32', '5676', 21.00, 672.00);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `storage`
+--
+
+CREATE TABLE `storage` (
+  `StorageID` int(11) NOT NULL,
+  `ItemDescription` varchar(255) NOT NULL,
+  `Quantity` int(11) NOT NULL DEFAULT 0,
+  `Remarks` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `storage`
+--
+
+INSERT INTO `storage` (`StorageID`, `ItemDescription`, `Quantity`, `Remarks`) VALUES
+(16, 'noli', 6, 'This book is donation');
 
 -- --------------------------------------------------------
 
@@ -365,23 +450,23 @@ INSERT INTO `subclassification` (`SubClassificationID`, `MainClassID`, `SubClass
 -- --------------------------------------------------------
 
 --
--- Table structure for table `supplier`
+-- Table structure for table `suppliers`
 --
 
-CREATE TABLE `supplier` (
+CREATE TABLE `suppliers` (
   `SupplierID` int(11) NOT NULL,
-  `SupplierName` varchar(50) NOT NULL,
-  `ContactPerson` varchar(50) NOT NULL,
-  `ContactNumber` varchar(15) NOT NULL,
-  `Address` text NOT NULL
+  `Name` varchar(255) NOT NULL,
+  `Address` text NOT NULL,
+  `ContactInfo` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `supplier`
+-- Dumping data for table `suppliers`
 --
 
-INSERT INTO `supplier` (`SupplierID`, `SupplierName`, `ContactPerson`, `ContactNumber`, `Address`) VALUES
-(1, 'Abc Publisher', 'Maria Ming', '09077489667', 'San Miguel, Calumpang, General Santos City, South Cotabato, Mindanao, 9500');
+INSERT INTO `suppliers` (`SupplierID`, `Name`, `Address`, `ContactInfo`) VALUES
+(1, 'Default Supplier', 'PUROK CARMENVILLE BRGY. CALUMPANG, GENERAL SANTOS CITY', 'TEL. NO. 553-1450 MOBILE NO. 0946-713-6519'),
+(2, 'ron', 'Apopong', '0902343232');
 
 --
 -- Indexes for dumped tables
@@ -470,6 +555,26 @@ ALTER TABLE `personnellogin`
   ADD KEY `PersonnelID` (`PersonnelID`);
 
 --
+-- Indexes for table `purchase_orders`
+--
+ALTER TABLE `purchase_orders`
+  ADD PRIMARY KEY (`PurchaseOrderID`),
+  ADD KEY `SupplierID` (`SupplierID`);
+
+--
+-- Indexes for table `purchase_order_items`
+--
+ALTER TABLE `purchase_order_items`
+  ADD PRIMARY KEY (`ItemID`),
+  ADD KEY `PurchaseOrderID` (`PurchaseOrderID`);
+
+--
+-- Indexes for table `storage`
+--
+ALTER TABLE `storage`
+  ADD PRIMARY KEY (`StorageID`);
+
+--
 -- Indexes for table `subclassification`
 --
 ALTER TABLE `subclassification`
@@ -477,9 +582,9 @@ ALTER TABLE `subclassification`
   ADD KEY `MainClassID` (`MainClassID`);
 
 --
--- Indexes for table `supplier`
+-- Indexes for table `suppliers`
 --
-ALTER TABLE `supplier`
+ALTER TABLE `suppliers`
   ADD PRIMARY KEY (`SupplierID`);
 
 --
@@ -490,13 +595,13 @@ ALTER TABLE `supplier`
 -- AUTO_INCREMENT for table `authors`
 --
 ALTER TABLE `authors`
-  MODIFY `AuthorID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `AuthorID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
 
 --
 -- AUTO_INCREMENT for table `book`
 --
 ALTER TABLE `book`
-  MODIFY `BookID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `BookID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
 
 --
 -- AUTO_INCREMENT for table `category`
@@ -508,7 +613,7 @@ ALTER TABLE `category`
 -- AUTO_INCREMENT for table `loan`
 --
 ALTER TABLE `loan`
-  MODIFY `TransactionID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
+  MODIFY `TransactionID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=87;
 
 --
 -- AUTO_INCREMENT for table `location`
@@ -520,7 +625,7 @@ ALTER TABLE `location`
 -- AUTO_INCREMENT for table `mainclassification`
 --
 ALTER TABLE `mainclassification`
-  MODIFY `MainClassificationID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `MainClassificationID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `material`
@@ -538,13 +643,31 @@ ALTER TABLE `penalty`
 -- AUTO_INCREMENT for table `penaltytransaction`
 --
 ALTER TABLE `penaltytransaction`
-  MODIFY `PenaltyTransactionID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `PenaltyTransactionID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `personnellogin`
 --
 ALTER TABLE `personnellogin`
-  MODIFY `LoginID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `LoginID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT for table `purchase_orders`
+--
+ALTER TABLE `purchase_orders`
+  MODIFY `PurchaseOrderID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+
+--
+-- AUTO_INCREMENT for table `purchase_order_items`
+--
+ALTER TABLE `purchase_order_items`
+  MODIFY `ItemID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+
+--
+-- AUTO_INCREMENT for table `storage`
+--
+ALTER TABLE `storage`
+  MODIFY `StorageID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `subclassification`
@@ -553,10 +676,10 @@ ALTER TABLE `subclassification`
   MODIFY `SubClassificationID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
--- AUTO_INCREMENT for table `supplier`
+-- AUTO_INCREMENT for table `suppliers`
 --
-ALTER TABLE `supplier`
-  MODIFY `SupplierID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+ALTER TABLE `suppliers`
+  MODIFY `SupplierID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- Constraints for dumped tables
@@ -593,6 +716,18 @@ ALTER TABLE `penaltytransaction`
 --
 ALTER TABLE `personnellogin`
   ADD CONSTRAINT `personnellogin_ibfk_1` FOREIGN KEY (`PersonnelID`) REFERENCES `personnel` (`PersonnelID`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `purchase_orders`
+--
+ALTER TABLE `purchase_orders`
+  ADD CONSTRAINT `purchase_orders_ibfk_1` FOREIGN KEY (`SupplierID`) REFERENCES `suppliers` (`SupplierID`);
+
+--
+-- Constraints for table `purchase_order_items`
+--
+ALTER TABLE `purchase_order_items`
+  ADD CONSTRAINT `purchase_order_items_ibfk_1` FOREIGN KEY (`PurchaseOrderID`) REFERENCES `purchase_orders` (`PurchaseOrderID`);
 
 --
 -- Constraints for table `subclassification`
